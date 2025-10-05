@@ -1,75 +1,77 @@
-// Configuración de PostgreSQL (Railway)
-const pool = new Pool({
-  host: 'trolley.proxy.rlwy.net',
-  port: 19089,
-  user: 'postgres',
-  password: 'IitLvfReKkqrdUGrIJEZlLXcbJUimsaf',
-  database: 'railway',
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
+const { Pool } = require('pg');
 
-const initDatabase = async () => {
-  try {
-    // Tabla users
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Tabla categories
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        name VARCHAR(255) NOT NULL,
-        type VARCHAR(50) CHECK (type IN ('income', 'expense')),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, name)
-      )
-    `);
-
-    // Tabla transactions
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS transactions (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        category_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
-        description VARCHAR(500) NOT NULL,
-        amount DECIMAL(12,2) NOT NULL,
-        type VARCHAR(50) CHECK (type IN ('income', 'expense')),
-        date DATE DEFAULT CURRENT_DATE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    console.log('✅ Tablas creadas/verificadas exitosamente');
-  } catch (error) {
-    console.error('❌ Error creando tablas:', error);
-  }
+// ⚠️ [CONFIGURACIÓN REAL DE RAILWAY]
+const config = {
+    host: 'trolley.proxy.rlwy.net',
+    port: 19089,
+    user: 'postgres',
+    password: 'IitLvfReKkqrdUGrIJEZlLXcbJUimsaf',
+    database: 'railway',
+    // Requerido por la conexión Railway
+    ssl: {
+        rejectUnauthorized: false
+    }
 };
 
-// Inicializar base de datos
-initDatabase();
+const pool = new Pool(config);
 
-// Test de conexión
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('❌ Error al conectar con PostgreSQL:', err.message);
-    process.exit(1);
-  } else {
-    console.log('✅ Conectado a la base de datos PostgreSQL');
-    if (release) release();
-  }
+pool.on('error', (err, client) => {
+    // Si la conexión falla después de un tiempo, nos alertará
+    console.error('⚠️ Error inesperado en el cliente inactivo de PostgreSQL', err);
 });
-// Exportar el pool y la función de inicialización para que otros módulos (Repositorios) puedan acceder a la DB
+
+/**
+ * Inicializa la base de datos creando las tablas si no existen.
+ * Esta función es llamada una única vez al iniciar el servidor.
+ */
+const initDatabase = async () => {
+    console.log('⚙️ Iniciando verificación de esquema de base de datos...');
+    try {
+        // La tabla USERS: Usamos 'password_hash' para el campo de seguridad
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL, 
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        // La tabla CATEGORIES: Aseguramos la unicidad por usuario
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS categories (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                name VARCHAR(100) NOT NULL,
+                type VARCHAR(10) NOT NULL CHECK (type IN ('income', 'expense')),
+                UNIQUE (user_id, name)
+            );
+        `);
+
+        // La tabla TRANSACTIONS: Usamos ON DELETE RESTRICT (Mejor Práctica)
+        // ON DELETE RESTRICT: Evita que se elimine una categoría si tiene movimientos asociados.
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS transactions (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
+                description VARCHAR(255) NOT NULL,
+                amount NUMERIC(15, 2) NOT NULL,
+                type VARCHAR(10) NOT NULL CHECK (type IN ('income', 'expense')),
+                date DATE NOT NULL DEFAULT CURRENT_DATE,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        console.log('✅ Esquema de base de datos verificado y listo.');
+    } catch (error) {
+        console.error('❌ Error al inicializar la base de datos (CREATE TABLE):', error.message);
+        throw error;
+    }
+};
+
 module.exports = {
     pool,
-    initDatabase
+    initDatabase // Exportamos la función de inicialización para el server.js
 };
