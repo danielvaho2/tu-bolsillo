@@ -1,0 +1,97 @@
+.add-movement-container {
+  max-width: 500px;
+  margin: 30px auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: #f7f7f7;
+}
+
+.movement-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.movement-form label {
+  font-weight: bold;
+  border-radius: 5px;
+}
+
+.movement-form input,
+.movement-form select {
+  padding: 8px;
+  width: 100%;
+  border-radius: 5px;
+  border: 1px solid #aaa;
+}
+
+.submit-btn {
+  padding: 10px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  background-color: #45a049;
+}
+
+/* Estilos generales para todos los enlaces */
+a {
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border-radius: 5px;
+  font-weight: 500;
+}
+
+/* Estilo específico para el enlace "Volver al Dashboard" */
+a[href*="Dashboard"], 
+a:first-child {
+  color: #666;
+  padding: 8px 12px;
+  margin-right: 15px;
+  margin-bottom: 10px;
+  display: inline-block;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+a[href*="Dashboard"]:hover, 
+a:first-child:hover {
+  background-color: #e9ecef;
+  color: #333;
+  transform: translateY(-1px);
+}
+
+/* Estilo específico para el enlace "Ver Historial" */
+a[href*="Historial"], 
+a:last-child {
+  color: #4caf50;
+  padding: 8px 15px;
+  margin-left: 10px;
+  margin-bottom: 10px;
+  display: inline-block;
+  border: 1px solid #4caf50;
+  background-color: transparent;
+}
+
+a[href*="Historial"]:hover, 
+a:last-child:hover {
+  background-color: #4caf50;
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Si los enlaces están en un contenedor específico */
+.add-movement-container > a {
+  margin: 5px 8px 15px 0;
+}
+
+/* Agregar separación entre enlaces */
+.add-movement-container a + a {
+  margin-left: 15px;
+}

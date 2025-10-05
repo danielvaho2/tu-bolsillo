@@ -1,0 +1,33 @@
+.movement-list-container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+  }
+  
+  .movement-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .movement-table th,
+  .movement-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ccc;
+  }
+  
+  .movement-table th {
+    background-color: #f0f0f0;
+  }
+  
+  .income td {
+    background-color: #e6ffe6;
+  }
+  
+  .expense td {
+    background-color: #ffe6e6;
+  }
+  
