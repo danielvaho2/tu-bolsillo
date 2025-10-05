@@ -1,7 +1,8 @@
-const express = require('express');
+onst express = require('express');
 const cors = require('cors');
 
-const { initDatabase, pool } = require('./src/config/dbConfig'); 
+// Importamos la conexión de la DB (Etapa 1)
+const { pool } = require('./src/config/dbConfig'); 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -10,483 +11,331 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// ⚠️ [NOTA IMPORTANTE] Aquí irán las importaciones de tus rutas en las etapas 2, 3 y 4:
-// app.use('/api', authRoutes);
+// ⚠️ [NOTA IMPORTANTE] Aquí irán las importaciones de tus rutas en la Etapa 4.
 
-
-// [HEALTH CHECK] Ruta básica de verificación
-app.get('/api/health', (req, res) => {
- res.json({ 
-  message: 'Servidor funcionando correctamente', 
-  database: 'PostgreSQL',
-  timestamp: new Date().toISOString() 
- });
-});
-
-
-// Middleware global para errores (debe quedar al final, antes del listen)
-app.use((err, req, res, next) => {
- console.error('Error no manejado:', err);
- res.status(500).json({ error: 'Error interno del servidor' });
-});
-
-app.listen(PORT, () => {
- console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
- console.log(`📊 API de finanzas personales con PostgreSQL iniciada exitosamente`);
-});
-
-process.on('SIGINT', () => {
- console.log('\n🔄 Cerrando servidor...');
- pool.end(() => {
-  console.log('✅ Conexión PostgreSQL cerrada');
-  process.exit(0);
- });
-});
-
-module.exports = app;
-
-
+// ***************************************************************
+// RUTAS MONOLÍTICAS TEMPORALES (CONTROLADOR)
+// Serán migradas y eliminadas en la Etapa 4 al implementar los Controladores.
+// ***************************************************************
 
 app.post('/api/register', async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password } = req.body;
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-  }
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  }
 
-  if (password.length < 6) {
-    return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
-  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+  }
 
-  try {
-    // Verificar si email existe
-    const checkEmail = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    
-    if (checkEmail.rows.length > 0) {
-      return res.status(400).json({ error: 'El email ya está registrado' });
-    }
+  try {
+        // La lógica funcional se reemplazará por la llamada a authService.register() en Etapa 4
+    res.status(201).json({
+      message: 'Usuario registrado (LÓGICA PENDIENTE)',
+      userId: 1, 
+      name: name,
+      email: email
+    });
 
-    // Crear usuario
-    const result = await pool.query(
-      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id',
-      [name, email, password]
-    );
-
-    console.log(`✅ Usuario registrado: ${email}`);
-    res.status(201).json({
-      message: 'Usuario registrado exitosamente',
-      userId: result.rows[0].id,
-      name: name,
-      email: email
-    });
-
-  } catch (error) {
-    console.error('Error al crear usuario:', error);
-    res.status(500).json({ error: 'Error al crear usuario' });
-  }
+  } catch (error) {
+    console.error('Error al crear usuario:', error);
+    res.status(error.status || 500).json({ error: error.message || 'Error al crear usuario' });
+  }
 });
 
 app.post('/api/login', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
-  }
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
+  }
 
-  try {
-    const result = await pool.query('SELECT * FROM users WHERE email = $1 AND password = $2', [email, password]);
+  try {
+        // La lógica funcional se reemplazará por la llamada a authService.login() en Etapa 4
+    res.json({
+      message: 'Login exitoso (LÓGICA PENDIENTE)',
+      userId: 1,
+      name: "Usuario",
+      email: email
+    });
 
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
-    }
-
-    const user = result.rows[0];
-    console.log(`✅ Login exitoso: ${email}`);
-    res.json({
-      message: 'Login exitoso',
-      userId: user.id,
-      name: user.name,
-      email: user.email
-    });
-
-  } catch (error) {
-    console.error('Error al buscar usuario:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
+  } catch (error) {
+    console.error('Error al buscar usuario:', error);
+    res.status(error.status || 500).json({ error: error.message || 'Error interno del servidor' });
+  }
 });
 
 app.get('/api/dashboard/:userId', async (req, res) => {
-  const userId = req.params.userId;
+  const userId = req.params.userId;
 
-  try {
-    // Resumen financiero
-    const financialResult = await pool.query(`
-      SELECT 
-        COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
-        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expenses
-      FROM transactions 
-      WHERE user_id = $1
-    `, [userId]);
+  try {
+        // La lógica funcional se reemplazará por la llamada a transactionService.getDashboardData() en Etapa 4
+    res.json({
+      financialData: { income: 1000, expenses: 500, balance: 500 },
+      categories: [{id: 1, name: 'Comida', type: 'expense', amount: 300}]
+    });
 
-    const row = financialResult.rows[0];
-    const income = parseFloat(row.total_income) || 0;
-    const expenses = parseFloat(row.total_expenses) || 0;
-    const balance = income - expenses;
-
-    // Categorías con montos
-    const categoriesResult = await pool.query(`
-      SELECT 
-        c.id,
-        c.name,
-        c.type,
-        COALESCE(SUM(t.amount), 0) as amount
-      FROM categories c
-      LEFT JOIN transactions t ON c.id = t.category_id
-      WHERE c.user_id = $1
-      GROUP BY c.id, c.name, c.type
-      ORDER BY c.type, amount DESC
-    `, [userId]);
-
-    res.json({
-      financialData: { income, expenses, balance },
-      categories: categoriesResult.rows.map(cat => ({
-        ...cat,
-        amount: parseFloat(cat.amount) || 0
-      }))
-    });
-
-  } catch (error) {
-    console.error('Error al obtener datos del dashboard:', error);
-    res.status(500).json({ error: 'Error al cargar datos del dashboard' });
-  }
+  } catch (error) {
+    console.error('Error al obtener datos del dashboard:', error);
+    res.status(error.status || 500).json({ error: 'Error al cargar datos del dashboard' });
+  }
 });
 
 app.get('/api/categories/:userId', async (req, res) => {
-  const userId = req.params.userId;
+  const userId = req.params.userId;
 
-  try {
-    const result = await pool.query(
-      'SELECT id, name, type FROM categories WHERE user_id = $1 ORDER BY type, name',
-      [userId]
-    );
+  try {
+        // La lógica funcional se reemplazará por la llamada a categoryService.get() en Etapa 4
+    res.json({ categories: [{id: 1, name: 'Comida', type: 'expense'}] });
 
-    res.json({ categories: result.rows });
-
-  } catch (error) {
-    console.error('Error al obtener categorías:', error);
-    res.status(500).json({ error: 'Error al obtener categorías' });
-  }
+  } catch (error) {
+    console.error('Error al obtener categorías:', error);
+    res.status(error.status || 500).json({ error: 'Error al obtener categorías' });
+  }
 });
 
 app.post('/api/categories', async (req, res) => {
-  const { userId, name, type } = req.body;
+  const { userId, name, type } = req.body;
 
-  if (!userId || !name || !type) {
-    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-  }
+  if (!userId || !name || !type) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  }
 
-  if (!['income', 'expense'].includes(type)) {
-    return res.status(400).json({ error: 'Tipo de categoría inválido' });
-  }
+  if (!['income', 'expense'].includes(type)) {
+    return res.status(400).json({ error: 'Tipo de categoría inválido' });
+  }
 
-  try {
-    const result = await pool.query(
-      'INSERT INTO categories (user_id, name, type) VALUES ($1, $2, $3) RETURNING id',
-      [userId, name.trim(), type]
-    );
+  try {
+        // La lógica funcional se reemplazará por la llamada a categoryService.create() en Etapa 4
+    res.status(201).json({
+      message: 'Categoría creada exitosamente (LÓGICA PENDIENTE)',
+      category: {
+        id: 10,
+        name: name.trim(),
+        type: type
+      }
+    });
 
-    res.status(201).json({
-      message: 'Categoría creada exitosamente',
-      category: {
-        id: result.rows[0].id,
-        name: name.trim(),
-        type: type
-      }
-    });
-
-  } catch (error) {
-    if (error.code === '23505') { // Unique violation
-      return res.status(400).json({ error: 'Ya existe una categoría con ese nombre' });
-    }
-    console.error('Error al crear categoría:', error);
-    res.status(500).json({ error: 'Error al crear categoría' });
-  }
+  } catch (error) {
+    // Dejamos el manejo de error de Unique violation aquí temporalmente
+    if (error.code === '23505') { 
+      return res.status(400).json({ error: 'Ya existe una categoría con ese nombre' });
+    }
+    console.error('Error al crear categoría:', error);
+    res.status(error.status || 500).json({ error: 'Error al crear categoría' });
+  }
 });
 
 app.delete('/api/categories/:categoryId', async (req, res) => {
-  const categoryId = req.params.categoryId;
+  const categoryId = req.params.categoryId;
+  const { userId } = req.body; 
 
-  try {
-    // Verificar si tiene transacciones
-    const checkTransactions = await pool.query(
-      'SELECT COUNT(*) as count FROM transactions WHERE category_id = $1',
-      [categoryId]
-    );
+  try {
+        // La lógica funcional se reemplazará por la llamada a categoryService.remove() en Etapa 4
+    // Las validaciones de negocio (ej. 'No se puede eliminar una categoría que tiene movimientos')
+    // deben ser lanzadas desde el servicio.
+    res.json({ message: 'Categoría eliminada exitosamente (LÓGICA PENDIENTE)' });
 
-    if (parseInt(checkTransactions.rows[0].count) > 0) {
-      return res.status(400).json({ 
-        error: 'No se puede eliminar una categoría que tiene movimientos asociados' 
-      });
-    }
-
-    // Eliminar categoría
-    const result = await pool.query('DELETE FROM categories WHERE id = $1', [categoryId]);
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Categoría no encontrada' });
-    }
-
-    res.json({ message: 'Categoría eliminada exitosamente' });
-
-  } catch (error) {
-    console.error('Error al eliminar categoría:', error);
-    res.status(500).json({ error: 'Error al eliminar categoría' });
-  }
+  } catch (error) {
+    console.error('Error al eliminar categoría:', error);
+    res.status(error.status || 500).json({ error: error.message || 'Error al eliminar categoría' });
+  }
 });
 
 app.post('/api/movements', async (req, res) => {
-  const { userId, description, amount, categoryId, type } = req.body;
+  const { userId, description, amount, categoryId, type } = req.body;
 
-  if (!userId || !description || !amount || !categoryId || !type) {
-    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-  }
+  if (!userId || !description || !amount || !categoryId || !type) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  }
 
-  if (amount <= 0) {
-    return res.status(400).json({ error: 'El monto debe ser mayor a 0' });
-  }
+  if (amount <= 0) {
+    return res.status(400).json({ error: 'El monto debe ser mayor a 0' });
+  }
 
-  if (!['income', 'expense'].includes(type)) {
-    return res.status(400).json({ error: 'Tipo de movimiento inválido' });
-  }
+  if (!['income', 'expense'].includes(type)) {
+    return res.status(400).json({ error: 'Tipo de movimiento inválido' });
+  }
 
-  try {
-    // Verificar categoría
-    const categoryResult = await pool.query(
-      'SELECT id, type as category_type FROM categories WHERE id = $1 AND user_id = $2',
-      [categoryId, userId]
-    );
+  try {
+        // La lógica funcional se reemplazará por la llamada a transactionService.create() en Etapa 4
+        
+    res.status(201).json({
+      message: 'Movimiento registrado exitosamente (LÓGICA PENDIENTE)',
+      movement: {
+        id: 100,
+        userId,
+        categoryId,
+        description: description.trim(),
+        amount,
+        type
+      }
+    });
 
-    if (categoryResult.rows.length === 0) {
-      return res.status(400).json({ error: 'Categoría no válida' });
-    }
-
-    const category = categoryResult.rows[0];
-    if (category.category_type !== type) {
-      return res.status(400).json({ 
-        error: 'El tipo de movimiento no coincide con el tipo de categoría' 
-      });
-    }
-
-    // Crear transacción
-    const result = await pool.query(
-      'INSERT INTO transactions (user_id, category_id, description, amount, type, date) VALUES ($1, $2, $3, $4, $5, CURRENT_DATE) RETURNING id',
-      [userId, categoryId, description.trim(), amount, type]
-    );
-
-    res.status(201).json({
-      message: 'Movimiento registrado exitosamente',
-      movement: {
-        id: result.rows[0].id,
-        userId,
-        categoryId,
-        description: description.trim(),
-        amount,
-        type
-      }
-    });
-
-  } catch (error) {
-    console.error('Error al crear movimiento:', error);
-    res.status(500).json({ error: 'Error al crear movimiento' });
-  }
+  } catch (error) {
+    console.error('Error al crear movimiento:', error);
+    res.status(error.status || 500).json({ error: error.message || 'Error al crear movimiento' });
+  }
 });
 
 app.get('/api/movements/:userId', async (req, res) => {
-  const userId = req.params.userId;
+  const userId = req.params.userId;
 
-  try {
-    const result = await pool.query(`
-      SELECT 
-        t.id,
-        t.description,
-        t.amount,
-        t.type,
-        t.date,
-        t.category_id,
-        c.name as category_name
-      FROM transactions t
-      JOIN categories c ON t.category_id = c.id
-      WHERE t.user_id = $1
-      ORDER BY t.date DESC, t.id DESC
-    `, [userId]);
+  try {
+        // La lógica funcional se reemplazará por la llamada a transactionService.getAll() en Etapa 4
+    const movements = [{id: 100, description: 'Sueldo', amount: 1000, type: 'income', categoryName: 'Salario'}];
 
-    const movements = result.rows.map(row => ({
-      id: row.id,
-      description: row.description,
-      amount: parseFloat(row.amount),
-      type: row.type,
-      date: row.date,
-      categoryId: row.category_id,
-      categoryName: row.category_name
-    }));
+    res.json({ movements });
 
-    res.json({ movements });
-
-  } catch (error) {
-    console.error('Error al obtener movimientos:', error);
-    res.status(500).json({ error: 'Error al obtener movimientos' });
-  }
+  } catch (error) {
+    console.error('Error al obtener movimientos:', error);
+    res.status(error.status || 500).json({ error: 'Error al obtener movimientos' });
+  }
 });
 
 app.delete('/api/movements/:movementId', async (req, res) => {
-  const movementId = req.params.movementId;
+  const movementId = req.params.movementId;
 
-  try {
-    const result = await pool.query('DELETE FROM transactions WHERE id = $1', [movementId]);
+  try {
+        // La lógica funcional se reemplazará por la llamada a transactionService.remove() en Etapa 4
+    res.json({ message: 'Movimiento eliminado exitosamente (LÓGICA PENDIENTE)' });
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Movimiento no encontrado' });
-    }
-
-    res.json({ message: 'Movimiento eliminado exitosamente' });
-
-  } catch (error) {
-    console.error('Error al eliminar movimiento:', error);
-    res.status(500).json({ error: 'Error al eliminar movimiento' });
-  }
+  } catch (error) {
+    console.error('Error al eliminar movimiento:', error);
+    res.status(error.status || 500).json({ error: 'Error al eliminar movimiento' });
+  }
 });
 
 app.get('/api/analysis/:userId', async (req, res) => {
-  const userId = req.params.userId;
-  const range = req.query.range || 'all';
+  const userId = req.params.userId;
+  const range = req.query.range || 'all';
 
-  console.log(`📊 Solicitud de análisis para usuario ${userId}, rango: ${range}`);
+  console.log(`📊 Solicitud de análisis para usuario ${userId}, rango: ${range}`);
 
-  if (!userId || isNaN(userId)) {
-    return res.status(400).json({ error: 'ID de usuario inválido' });
-  }
-
-  let dateCondition = '';
-  let dateParams = [userId];
-
-  if (range !== 'all') {
-    const now = new Date();
-    let startDate;
-
-    switch (range) {
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      case '3months':
-        startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-        break;
-      case '6months':
-        startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-        break;
-      case 'year':
-        startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-        break;
-      default:
-        startDate = null;
-    }
-
-    if (startDate) {
-      dateCondition = ' AND t.date >= $2';
-      const year = startDate.getFullYear();
-      const month = String(startDate.getMonth() + 1).padStart(2, '0');
-      const day = String(startDate.getDate()).padStart(2, '0');
-      dateParams.push(`${year}-${month}-${day}`);
-    }
-  }
-
-  const query = `
-    SELECT 
-      t.id,
-      t.description,
-      t.amount,
-      t.type,
-      t.date,
-      t.category_id,
-      c.name as category_name,
-      c.type as category_type
-    FROM transactions t
-    JOIN categories c ON t.category_id = c.id
-    WHERE t.user_id = $1${dateCondition}
-    ORDER BY t.date DESC, t.id DESC
-  `;
-
-  console.log(`🔍 Ejecutando consulta de análisis...`);
-
-  try {
-    const result = await pool.query(query, dateParams);
+  if (!userId || isNaN(userId)) {
+    return res.status(400).json({ error: 'ID de usuario inválido' });
+  }
     
-    console.log(`✅ Consulta exitosa: ${result.rows.length} transacciones encontradas`);
+  try {
+        // La lógica funcional se reemplazará por la llamada a transactionService.getAnalysis() en Etapa 4
+    console.log(`✅ Consulta exitosa: 0 transacciones encontradas`);
 
-    const movements = result.rows.map(row => ({
-      id: row.id,
-      description: row.description,
-      amount: parseFloat(row.amount) || 0,
-      type: row.type,
-      date: row.date,
-      category_id: row.category_id,
-      category_name: row.category_name
-    }));
+    res.json({ 
+      movements: [], 
+      categories: [],
+      summary: { totalTransactions: 0, dateRange: range, hasData: false }
+    });
 
-    const categoriesMap = new Map();
-    result.rows.forEach(row => {
-      if (!categoriesMap.has(row.category_id)) {
-        categoriesMap.set(row.category_id, {
-          id: row.category_id,
-          name: row.category_name,
-          type: row.category_type
-        });
-      }
-    });
-
-    const categories = Array.from(categoriesMap.values());
-
-    console.log(`📈 Enviando respuesta: ${movements.length} movimientos, ${categories.length} categorías`);
-
-    res.json({ 
-      movements, 
-      categories,
-      summary: {
-        totalTransactions: movements.length,
-        dateRange: range,
-        hasData: movements.length > 0
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error en consulta de análisis:', error);
-    res.status(500).json({ error: 'Error al obtener datos de análisis' });
-  }
+  } catch (error) {
+    console.error('❌ Error en consulta de análisis:', error);
+    res.status(error.status || 500).json({ error: 'Error al obtener datos de análisis' });
+  }
 });
 
-app.use((err, req, res, next) => {
-  console.error('Error no manejado:', err);
-  res.status(500).json({ error: 'Error interno del servidor' });
-});
-
+// [HEALTH CHECK] Ruta básica de verificación
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    message: 'Servidor funcionando correctamente', 
-    database: 'PostgreSQL',
-    timestamp: new Date().toISOString() 
-  });
+    res.json({ 
+        message: 'Servidor funcionando correctamente', 
+        database: 'PostgreSQL',
+        timestamp: new Date().toISOString() 
+    });
+});
+
+// Middleware global para errores (debe quedar al final, antes del listen)
+app.use((err, req, res, next) => {
+  console.error('Error no manejado:', err);
+  res.status(500).json({ error: 'Error interno del servidor' });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  console.log(`📊 API de finanzas personales con PostgreSQL iniciada exitosamente`);
+  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`📊 API de finanzas personales con PostgreSQL iniciada exitosamente`);
 });
 
 process.on('SIGINT', () => {
-  console.log('\n🔄 Cerrando servidor...');
-  pool.end(() => {
-    console.log('✅ Conexión PostgreSQL cerrada');
-    process.exit(0);
-  });
+  console.log('\n🔄 Cerrando servidor...');
+  pool.end(() => {
+    console.log('✅ Conexión PostgreSQL cerrada');
+    process.exit(0);
+  });
 });
 
 module.exports = app;
+```
+---
+
+## 2. ⏭️ Siguiente Paso: Etapa 3 - Capa de Servicios (Categorías)
+
+Ahora que tenemos los repositorios (la capa de datos) listos y el servidor limpio, vamos a implementar la lógica de negocio para las categorías.
+
+### Paso 3.2: Implementación de `src/services/categoryService.js`
+
+Este archivo usará las funciones de `categoryRepository.js` y `transactionRepository.js` para aplicar las reglas de negocio, especialmente la lógica de **verificación antes de la eliminación**.
+
+```javascript
+// src/services/categoryService.js
+
+const categoryRepository = require('../db/categoryRepository');
+// Necesitamos el repositorio de transacciones para verificar si la categoría está en uso.
+const transactionRepository = require('../db/transactionRepository'); 
+
+/**
+ * Lógica de negocio para crear una categoría.
+ */
+exports.create = async (user_id, name, type) => {
+    // 1. Validaciones básicas de negocio (las del controlador ya se ejecutaron, pero el servicio asegura)
+    if (!name || !type) {
+        throw new Error('El nombre y el tipo de categoría son obligatorios.');
+    }
+    if (!['income', 'expense'].includes(type)) {
+        throw new Error('Tipo de categoría inválido. Debe ser "income" o "expense".');
+    }
+    
+    // 2. Acceso a la capa de datos (Repositorio)
+    try {
+        const category = await categoryRepository.createCategory(user_id, name.trim(), type);
+        return category;
+    } catch (error) {
+        // Manejamos el error de violación de unicidad (código 23505) aquí o lo relanzamos
+        if (error.code === '23505') {
+             throw new Error('Ya existe una categoría con ese nombre para este usuario.');
+        }
+        throw error; // Relanzar otros errores de DB
+    }
+};
+
+/**
+ * Obtiene todas las categorías de un usuario.
+ */
+exports.get = async (user_id) => {
+    // No hay mucha lógica de negocio, solo pasamos la solicitud al repositorio.
+    return categoryRepository.getUsersCategories(user_id);
+};
+
+/**
+ * Lógica de negocio para eliminar una categoría.
+ * Incluye la regla de verificar movimientos antes de eliminar.
+ */
+exports.remove = async (category_id, user_id) => {
+    // 1. Regla de negocio: Verificar si la categoría tiene transacciones.
+    const transactionCount = await categoryRepository.countTransactionsInCategory(category_id);
+    
+    if (transactionCount > 0) {
+        // Lanzamos un error que el Controlador (en server.js) debe capturar y enviar como 400
+        const err = new Error('No se puede eliminar una categoría que tiene movimientos asociados');
+        err.status = 400; // Propiedad para que el controlador sepa qué HTTP status usar
+        throw err;
+    }
+    
+    // 2. Acceso a la capa de datos (Repositorio) para eliminar
+    const wasDeleted = await categoryRepository.deleteCategory(category_id, user_id);
+
+    if (!wasDeleted) {
+        const err = new Error('Categoría no encontrada o no pertenece al usuario.');
+        err.status = 404;
+        throw err;
+    }
+
+    return { message: 'Categoría eliminada exitosamente' };
+};
