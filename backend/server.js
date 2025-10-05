@@ -1,6 +1,7 @@
 const express = require('express');
-const { Pool } = require('pg'); 
 const cors = require('cors');
+
+const { initDatabase, pool } = require('./src/config/dbConfig'); 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -9,78 +10,42 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Configuración de PostgreSQL (Railway)
-const pool = new Pool({
-  host: 'trolley.proxy.rlwy.net',
-  port: 19089,
-  user: 'postgres',
-  password: 'IitLvfReKkqrdUGrIJEZlLXcbJUimsaf',
-  database: 'railway',
-  ssl: {
-    rejectUnauthorized: false
-  }
+// ⚠️ [NOTA IMPORTANTE] Aquí irán las importaciones de tus rutas en las etapas 2, 3 y 4:
+// app.use('/api', authRoutes);
+
+
+// [HEALTH CHECK] Ruta básica de verificación
+app.get('/api/health', (req, res) => {
+ res.json({ 
+  message: 'Servidor funcionando correctamente', 
+  database: 'PostgreSQL',
+  timestamp: new Date().toISOString() 
+ });
 });
 
-const initDatabase = async () => {
-  try {
-    // Tabla users
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
 
-    // Tabla categories
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        name VARCHAR(255) NOT NULL,
-        type VARCHAR(50) CHECK (type IN ('income', 'expense')),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, name)
-      )
-    `);
-
-    // Tabla transactions
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS transactions (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        category_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
-        description VARCHAR(500) NOT NULL,
-        amount DECIMAL(12,2) NOT NULL,
-        type VARCHAR(50) CHECK (type IN ('income', 'expense')),
-        date DATE DEFAULT CURRENT_DATE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    console.log('✅ Tablas creadas/verificadas exitosamente');
-  } catch (error) {
-    console.error('❌ Error creando tablas:', error);
-  }
-};
-
-// Inicializar base de datos
-initDatabase();
-
-// Test de conexión
-pool.connect((err, client, release) => {
-  if (err) {
-    console.error('❌ Error al conectar con PostgreSQL:', err.message);
-    process.exit(1);
-  } else {
-    console.log('✅ Conectado a la base de datos PostgreSQL');
-    if (release) release();
-  }
+// Middleware global para errores (debe quedar al final, antes del listen)
+app.use((err, req, res, next) => {
+ console.error('Error no manejado:', err);
+ res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-// RUTAS - Adaptadas para PostgreSQL
+app.listen(PORT, () => {
+ console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+ console.log(`📊 API de finanzas personales con PostgreSQL iniciada exitosamente`);
+});
+
+process.on('SIGINT', () => {
+ console.log('\n🔄 Cerrando servidor...');
+ pool.end(() => {
+  console.log('✅ Conexión PostgreSQL cerrada');
+  process.exit(0);
+ });
+});
+
+module.exports = app;
+
+
 
 app.post('/api/register', async (req, res) => {
   const { name, email, password } = req.body;
