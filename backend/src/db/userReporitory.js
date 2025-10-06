@@ -22,10 +22,12 @@ export async function findUserByEmail(email) {
 
 /**
  * Crea un nuevo usuario
+ * @param {string} name - Nombre del usuario
+ * @param {string} email - Email del usuario
+ * @param {string} hashedPassword - Contraseña hasheada
+ * @returns {Promise<Object>} Usuario creado
  */
-export async function createUser(userData) {
-  const { name, email, password } = userData;
-  
+export async function createUser(name, email, hashedPassword) {
   const query = `
     INSERT INTO users (name, email, password)
     VALUES ($1, $2, $3)
@@ -33,7 +35,7 @@ export async function createUser(userData) {
   `;
   
   try {
-    const result = await pool.query(query, [name, email, password]);
+    const result = await pool.query(query, [name, email, hashedPassword]);
     return result.rows[0];
   } catch (error) {
     console.error('Error en createUser:', error);

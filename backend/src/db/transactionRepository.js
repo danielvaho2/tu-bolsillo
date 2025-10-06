@@ -3,12 +3,15 @@ import { pool } from '../config/db.config.js';
 
 /**
  * Obtiene el resumen financiero del usuario
+ * @param {number} userId - ID del usuario
+ * @param {string|null} startDate - Fecha de inicio (opcional)
+ * @param {string|null} endDate - Fecha de fin (opcional)
+ * @returns {Promise<Object>} Resumen financiero
  */
-export async function getFinancialSummary(userId) {
+export const getFinancialSummary = async (userId, startDate = null, endDate = null) => {
   const client = await pool.connect();
   try {
-    // Resumen de ingresos y gastos
-    const summaryQuery = `
+    let summaryQuery = `
       SELECT 
         COALESCE(SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END), 0) as total_income,
         COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END), 0) as total_expenses
@@ -16,8 +19,7 @@ export async function getFinancialSummary(userId) {
       WHERE t.user_id = $1
     `;
     
-    // Últimas 10 transacciones
-    const recentTransactionsQuery = `
+    let recentTransactionsQuery = `
       SELECT 
         t.id,
         t.amount,
@@ -30,13 +32,29 @@ export async function getFinancialSummary(userId) {
       FROM transactions t
       LEFT JOIN categories c ON t.category_id = c.id
       WHERE t.user_id = $1
-      ORDER BY t.date DESC, t.created_at DESC
-      LIMIT 10
     `;
 
+    const queryParams = [userId];
+    let paramCounter = 2;
+
+    if (startDate) {
+      summaryQuery += ` AND t.date >= $${paramCounter}`;
+      recentTransactionsQuery += ` AND t.date >= $${paramCounter}`;
+      queryParams.push(startDate);
+      paramCounter++;
+    }
+
+    if (endDate) {
+      summaryQuery += ` AND t.date <= $${paramCounter}`;
+      recentTransactionsQuery += ` AND t.date <= $${paramCounter}`;
+      queryParams.push(endDate);
+    }
+
+    recentTransactionsQuery += ` ORDER BY t.date DESC, t.created_at DESC LIMIT 10`;
+
     const [summaryResult, transactionsResult] = await Promise.all([
-      client.query(summaryQuery, [userId]),
-      client.query(recentTransactionsQuery, [userId])
+      client.query(summaryQuery, queryParams),
+      client.query(recentTransactionsQuery, queryParams)
     ]);
 
     const summary = summaryResult.rows[0];
@@ -63,148 +81,73 @@ export async function getFinancialSummary(userId) {
   } finally {
     client.release();
   }
-}
+};
 
 /**
  * Crea una nueva transacción
+ * @param {number} userId - ID del usuario
+ * @param {number} categoryId - ID de la categoría
+ * @param {string} description - Descripción
+ * @param {number} amount - Monto
+ * @param {string} type - Tipo ('income' o 'expense')
+ * @param {string} date - Fecha
+ * @returns {Promise<Object>} Transacción creada
  */
-export async function createTransaction(userId, transactionData) {
-  const { amount, type, categoryId, description, date } = transactionData;
-  
+export const createTransaction = async (userId, categoryId, description, amount, type, date) => {
   const query = `
-    INSERT INTO transactions (user_id, amount, type, category_id, description, date)
+    INSERT INTO transactions (user_id, category_id, description, amount, type, date)
     VALUES ($1, $2, $3, $4, $5, $6)
-    RETURNING *
+    RETURNING id, user_id, category_id, description, amount, type, date, created_at
   `;
 
   try {
-    const result = await pool.query(query, [
-      userId,
-      amount,
-      type,
-      categoryId,
-      description,
-      date || new Date()
-    ]);
-    
+    const result = await pool.query(query, [userId, categoryId, description, amount, type, date]);
     return result.rows[0];
   } catch (error) {
     console.error('Error en createTransaction:', error);
     throw error;
   }
-}
+};
 
 /**
  * Obtiene todas las transacciones de un usuario
+ * @param {number} userId - ID del usuario
+ * @returns {Promise<Array>} Lista de transacciones
  */
-export async function getTransactionsByUser(userId, filters = {}) {
-  let query = `
+export const findTransactionsByUserId = async (userId) => {
+  const query = `
     SELECT 
-      t.*,
+      t.id,
+      t.user_id,
+      t.category_id,
+      t.description,
+      t.amount,
+      t.type,
+      t.date,
+      t.created_at,
       c.name as category_name
     FROM transactions t
     LEFT JOIN categories c ON t.category_id = c.id
     WHERE t.user_id = $1
+    ORDER BY t.date DESC, t.created_at DESC
   `;
-  
-  const queryParams = [userId];
-  let paramCounter = 2;
-
-  if (filters.type) {
-    query += ` AND t.type = $${paramCounter}`;
-    queryParams.push(filters.type);
-    paramCounter++;
-  }
-
-  if (filters.categoryId) {
-    query += ` AND t.category_id = $${paramCounter}`;
-    queryParams.push(filters.categoryId);
-    paramCounter++;
-  }
-
-  if (filters.startDate) {
-    query += ` AND t.date >= $${paramCounter}`;
-    queryParams.push(filters.startDate);
-    paramCounter++;
-  }
-
-  if (filters.endDate) {
-    query += ` AND t.date <= $${paramCounter}`;
-    queryParams.push(filters.endDate);
-    paramCounter++;
-  }
-
-  query += ` ORDER BY t.date DESC, t.created_at DESC`;
 
   try {
-    const result = await pool.query(query, queryParams);
+    const result = await pool.query(query, [userId]);
     return result.rows;
   } catch (error) {
-    console.error('Error en getTransactionsByUser:', error);
+    console.error('Error en findTransactionsByUserId:', error);
     throw error;
   }
-}
-
-/**
- * Obtiene una transacción por ID
- */
-export async function getTransactionById(transactionId, userId) {
-  const query = `
-    SELECT t.*, c.name as category_name
-    FROM transactions t
-    LEFT JOIN categories c ON t.category_id = c.id
-    WHERE t.id = $1 AND t.user_id = $2
-  `;
-
-  try {
-    const result = await pool.query(query, [transactionId, userId]);
-    return result.rows[0] || null;
-  } catch (error) {
-    console.error('Error en getTransactionById:', error);
-    throw error;
-  }
-}
-
-/**
- * Actualiza una transacción
- */
-export async function updateTransaction(transactionId, userId, updateData) {
-  const { amount, type, categoryId, description, date } = updateData;
-  
-  const query = `
-    UPDATE transactions
-    SET 
-      amount = COALESCE($1, amount),
-      type = COALESCE($2, type),
-      category_id = COALESCE($3, category_id),
-      description = COALESCE($4, description),
-      date = COALESCE($5, date)
-    WHERE id = $6 AND user_id = $7
-    RETURNING *
-  `;
-
-  try {
-    const result = await pool.query(query, [
-      amount,
-      type,
-      categoryId,
-      description,
-      date,
-      transactionId,
-      userId
-    ]);
-    
-    return result.rows[0] || null;
-  } catch (error) {
-    console.error('Error en updateTransaction:', error);
-    throw error;
-  }
-}
+};
 
 /**
  * Elimina una transacción
+ * @param {number} transactionId - ID de la transacción
+ * @param {number} userId - ID del usuario
+ * @returns {Promise<boolean>} true si se eliminó
  */
-export async function deleteTransaction(transactionId, userId) {
+export const deleteTransaction = async (transactionId, userId) => {
   const query = `
     DELETE FROM transactions
     WHERE id = $1 AND user_id = $2
@@ -213,17 +156,21 @@ export async function deleteTransaction(transactionId, userId) {
 
   try {
     const result = await pool.query(query, [transactionId, userId]);
-    return result.rows[0] || null;
+    return result.rowCount > 0;
   } catch (error) {
     console.error('Error en deleteTransaction:', error);
     throw error;
   }
-}
+};
 
 /**
  * Obtiene gastos por categoría
+ * @param {number} userId - ID del usuario
+ * @param {string|null} startDate - Fecha de inicio
+ * @param {string|null} endDate - Fecha de fin
+ * @returns {Promise<Array>} Gastos por categoría
  */
-export async function getExpensesByCategory(userId, startDate = null, endDate = null) {
+export const getExpensesByCategory = async (userId, startDate = null, endDate = null) => {
   let query = `
     SELECT 
       c.id as category_id,
@@ -259,39 +206,12 @@ export async function getExpensesByCategory(userId, startDate = null, endDate = 
     console.error('Error en getExpensesByCategory:', error);
     throw error;
   }
-}
-
-/**
- * Obtiene resumen mensual
- */
-export async function getMonthlyFinancialSummary(userId, year) {
-  const query = `
-    SELECT 
-      EXTRACT(MONTH FROM t.date)::INTEGER as month,
-      SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) as income,
-      SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) as expenses
-    FROM transactions t
-    WHERE t.user_id = $1 AND EXTRACT(YEAR FROM t.date) = $2
-    GROUP BY EXTRACT(MONTH FROM t.date)
-    ORDER BY month
-  `;
-
-  try {
-    const result = await pool.query(query, [userId, year]);
-    return result.rows;
-  } catch (error) {
-    console.error('Error en getMonthlyFinancialSummary:', error);
-    throw error;
-  }
-}
+};
 
 export default {
   getFinancialSummary,
   createTransaction,
-  getTransactionsByUser,
-  getTransactionById,
-  updateTransaction,
+  findTransactionsByUserId,
   deleteTransaction,
-  getExpensesByCategory,
-  getMonthlyFinancialSummary
+  getExpensesByCategory
 };

@@ -1,70 +1,98 @@
-import * as categoryRepository from '../db/categoryRepository.js'; // Usar import y .js
-import * as transactionRepository from '../db/transactionRepository.js'; // Usar import y .js
-
-// ---------------------------------------------
-// SERVICIO DE CATEGORÍAS
-// ---------------------------------------------
+// backend/src/services/categoryService.js
+import * as categoryRepository from '../db/categoryRepository.js';
 
 /**
- * Obtiene todas las categorías de un usuario.
- * @param {number} userId - ID del usuario.
- * @returns {Promise<Array<Object>>} Lista de categorías.
+ * Obtiene todas las categorías de un usuario
+ * @param {number} userId - ID del usuario
+ * @returns {Promise<Array>} Lista de categorías
  */
 export const get = async (userId) => {
-    try {
-        return await categoryRepository.findCategoriesByUserId(userId);
-    } catch (error) {
-        console.error('Error en get categories Service:', error);
-        throw new Error('Error al obtener categorías.');
-    }
+  if (!userId) {
+    const error = new Error('ID de usuario requerido');
+    error.status = 400;
+    throw error;
+  }
+
+  try {
+    return await categoryRepository.findCategoriesByUserId(userId);
+  } catch (error) {
+    console.error('Error en get categories:', error);
+    const serviceError = new Error('Error al obtener categorías');
+    serviceError.status = 500;
+    throw serviceError;
+  }
 };
 
 /**
- * Crea una nueva categoría.
- * @param {number} userId - ID del usuario.
- * @param {string} name - Nombre de la categoría.
- * @param {('income'|'expense')} type - Tipo de categoría.
- * @returns {Promise<Object>} La categoría creada.
+ * Crea una nueva categoría
+ * @param {number} userId - ID del usuario
+ * @param {string} name - Nombre de la categoría
+ * @param {string} type - Tipo ('income' o 'expense')
+ * @returns {Promise<Object>} Categoría creada
  */
 export const create = async (userId, name, type) => {
-    try {
-        return await categoryRepository.createCategory(userId, name, type);
-    } catch (error) {
-        // Asumimos que el error de duplicidad se maneja aquí o se pasa al controlador
-        console.error('Error en create category Service:', error);
-        throw new Error('Error al crear la categoría. Podría ya existir.');
-    }
+  if (!userId || !name || !type) {
+    const error = new Error('Todos los campos son obligatorios');
+    error.status = 400;
+    throw error;
+  }
+
+  if (!['income', 'expense'].includes(type)) {
+    const error = new Error('Tipo de categoría inválido');
+    error.status = 400;
+    throw error;
+  }
+
+  try {
+    return await categoryRepository.createCategory(userId, name, type);
+  } catch (error) {
+    console.error('Error en create category:', error);
+    if (error.status) throw error;
+    
+    const serviceError = new Error('Error al crear categoría');
+    serviceError.status = 500;
+    throw serviceError;
+  }
 };
 
 /**
- * Elimina una categoría, verificando primero que no tenga transacciones asociadas.
- * @param {number} categoryId - ID de la categoría.
- * @param {number} userId - ID del usuario para verificación de propiedad.
- * @returns {Promise<{message: string}>} Mensaje de éxito.
+ * Elimina una categoría
+ * @param {number} categoryId - ID de la categoría
+ * @param {number} userId - ID del usuario
+ * @returns {Promise<Object>} Resultado de la operación
  */
 export const remove = async (categoryId, userId) => {
-    try {
-        // 1. Verificar si hay transacciones asociadas
-        const hasTransactions = await transactionRepository.hasTransactionsInCategory(categoryId);
-        if (hasTransactions) {
-            const error = new Error('No se puede eliminar la categoría porque tiene movimientos asociados.');
-            error.status = 400;
-            throw error;
-        }
+  if (!categoryId || !userId) {
+    const error = new Error('IDs requeridos');
+    error.status = 400;
+    throw error;
+  }
 
-        // 2. Eliminar la categoría
-        const deleted = await categoryRepository.deleteCategory(categoryId, userId);
-
-        if (!deleted) {
-            const notFoundError = new Error('Categoría no encontrada o no pertenece al usuario.');
-            notFoundError.status = 404;
-            throw notFoundError;
-        }
-
-        return { message: 'Categoría eliminada exitosamente.' };
-
-    } catch (error) {
-        console.error('Error en remove category Service:', error);
-        throw new Error(error.message || 'Error al eliminar la categoría.');
+  try {
+    // Verificar si tiene transacciones
+    const hasTransactions = await categoryRepository.hasTransactionsInCategory(categoryId);
+    
+    if (hasTransactions) {
+      const error = new Error('No se puede eliminar la categoría porque tiene transacciones asociadas');
+      error.status = 400;
+      throw error;
     }
+
+    const deleted = await categoryRepository.deleteCategory(categoryId, userId);
+    
+    if (!deleted) {
+      const error = new Error('Categoría no encontrada');
+      error.status = 404;
+      throw error;
+    }
+
+    return { message: 'Categoría eliminada exitosamente' };
+  } catch (error) {
+    console.error('Error en remove category:', error);
+    if (error.status) throw error;
+    
+    const serviceError = new Error('Error al eliminar categoría');
+    serviceError.status = 500;
+    throw serviceError;
+  }
 };
