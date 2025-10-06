@@ -1,4 +1,5 @@
-const { Pool } = require('pg');
+import pg from 'pg'; // Cambio a import para ES Module
+const { Pool } = pg;
 
 // ⚠️ [CONFIGURACIÓN REAL DE RAILWAY]
 const config = {
@@ -13,7 +14,8 @@ const config = {
     }
 };
 
-const pool = new Pool(config);
+// Exportamos 'pool' directamente para que pueda ser importado por otros archivos
+export const pool = new Pool(config);
 
 pool.on('error', (err, client) => {
     // Si la conexión falla después de un tiempo, nos alertará
@@ -24,7 +26,8 @@ pool.on('error', (err, client) => {
  * Inicializa la base de datos creando las tablas si no existen.
  * Esta función es llamada una única vez al iniciar el servidor.
  */
-const initDatabase = async () => {
+// Exportamos 'initDatabase' directamente
+export const initDatabase = async () => {
     console.log('⚙️ Iniciando verificación de esquema de base de datos...');
     try {
         // La tabla USERS: Usamos 'password_hash' para el campo de seguridad
@@ -69,9 +72,4 @@ const initDatabase = async () => {
         console.error('❌ Error al inicializar la base de datos (CREATE TABLE):', error.message);
         throw error;
     }
-};
-
-module.exports = {
-    pool,
-    initDatabase // Exportamos la función de inicialización para el server.js
 };

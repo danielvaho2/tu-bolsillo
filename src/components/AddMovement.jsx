@@ -29,7 +29,7 @@ function AddMovement() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/categories/${user.userId}`);
+      const response = await fetch(`http://localhost:5001/api/categories/${user.userId}`);
       const data = await response.json();
 
       if (response.ok) {

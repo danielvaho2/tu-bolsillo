@@ -1,60 +1,105 @@
-const authRepository = require('../db/authRepository');
-// NOTA: En una aplicación real, necesitarías una librería de hashing como 'bcryptjs'.
-// const bcrypt = require('bcryptjs'); 
+import { findUserByEmail, createUser } from '../db/userReporitory.js';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
+const SECRET_KEY = process.env.JWT_SECRET || 'mi_clave_secreta_super_segura';
 
 /**
- * Registra un nuevo usuario, asegurando la unicidad del email y el hashing de la contraseña.
+ * Genera un token JWT para el usuario.
+ * @param {object} user - Objeto de usuario (id, email, name).
+ * @returns {string} El token JWT.
  */
-exports.register = async (name, email, password) => {
-    // 1. Regla de negocio: Verificar si el usuario ya existe
-    const existingUser = await authRepository.findUserByEmail(email);
-
-    if (existingUser) {
-        const err = new Error('Ya existe un usuario con este correo electrónico.');
-        err.status = 409; // Código HTTP 409 Conflict
-        throw err;
-    }
-
-    // 2. Seguridad: Hashear la contraseña.
-    // Usamos un placeholder por ahora, pero aquí iría la llamada a bcrypt:
-    // const hashedPassword = await bcrypt.hash(password, 10);
-    const hashedPassword = `hashed_${password}`; 
-
-    // 3. Crear el usuario en la DB
-    const newUser = await authRepository.createUser(name, email, hashedPassword);
-    
-    // 4. Devolvemos el usuario sin la contraseña hasheada (desestructuración)
-    const { password_hash, ...user } = newUser;
-    return user; 
+const generateToken = (user) => {
+    // Genera el token solo con información no sensible
+    return jwt.sign({ userId: user.id, email: user.email }, SECRET_KEY, { expiresIn: '1d' });
 };
 
 /**
- * Autentica a un usuario.
+ * Lógica para registrar un nuevo usuario.
+ * @param {string} name - Nombre del usuario.
+ * @param {string} email - Email del usuario.
+ * @param {string} password - Contraseña en texto plano.
+ * @returns {object} { user, token }
  */
-exports.login = async (email, password) => {
-    // 1. Buscar al usuario por email
-    const user = await authRepository.findUserByEmail(email);
+export const register = async (name, email, password) => {
+    try {
+        // 1. Verificar si el usuario ya existe
+        const existingUser = await findUserByEmail(email);
+        if (existingUser) {
+            throw new Error('El usuario con este email ya existe');
+        }
 
-    if (!user) {
-        const err = new Error('Credenciales inválidas.');
-        err.status = 401; // Código HTTP 401 Unauthorized
-        throw err;
+        // 2. Hashear la contraseña (Seguridad es importante, aunque tu base de datos no lo refleje aún)
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        // 3. Crear el usuario en la BD.
+        // NOTA IMPORTANTE: Si tu tabla 'users' en la base de datos solo tiene 'password'
+        // y no 'password_hash', esta función de repositorio debe estar insertando el hash
+        // en la columna 'password'.
+        const newUser = await createUser(name, email, hashedPassword);
+        
+        // 4. Generar token
+        const token = generateToken(newUser);
+
+        return { user: { id: newUser.id, name: newUser.name, email: newUser.email }, token };
+
+    } catch (error) {
+        console.error('Error en register:', error);
+        throw new Error(error.message || 'Error en el servicio de registro');
     }
+};
 
-    // 2. Seguridad: Comparar la contraseña hasheada.
-    // Aquí iría la llamada a bcrypt para comparar:
-    // const isMatch = await bcrypt.compare(password, user.password_hash);
-    
-    // Placeholder de comparación:
-    const isMatch = user.password_hash === `hashed_${password}`; 
-    
-    if (!isMatch) {
-        const err = new Error('Credenciales inválidas.');
-        err.status = 401; // Código HTTP 401 Unauthorized
-        throw err;
+/**
+ * Lógica para el inicio de sesión.
+ * @param {string} email - Email del usuario.
+ * @param {string} password - Contraseña en texto plano ingresada.
+ * @returns {object} { user, token }
+ */
+export const login = async (email, password) => {
+    try {
+        // 1. Buscar usuario por email
+        const user = await findUserByEmail(email);
+
+        if (!user) {
+            throw new Error('Credenciales inválidas');
+        }
+
+        // 2. Obtener la contraseña hasheada del objeto 'user'
+        // CORRECCIÓN CLAVE: Debe usar 'user.password' ya que la columna en la BD se llama 'password'
+        // Si el esquema usara un nombre más seguro, sería 'user.password_hash'.
+        const hashedPassword = user.password;
+        
+        if (!hashedPassword) {
+            // Este caso debería ser imposible si el registro fue correcto,
+            // pero previene errores si el campo 'password' está nulo.
+            throw new Error('Error de configuración de contraseña para el usuario.');
+        }
+
+        // 3. Comparar la contraseña ingresada con el hash almacenado
+        // ¡Aquí es donde ocurría el error! El segundo argumento era undefined.
+        const passwordMatch = await bcrypt.compare(password, hashedPassword);
+
+        if (!passwordMatch) {
+            throw new Error('Credenciales inválidas');
+        }
+
+        // 4. Generar token
+        const token = generateToken(user);
+
+        return { user: { id: user.id, name: user.name, email: user.email }, token };
+
+    } catch (error) {
+        console.error('Error en login:', error);
+        throw new Error(error.message || 'Error de autenticación');
     }
+};
 
-    // 3. Login exitoso. Devolvemos la información pública del usuario.
-    const { password_hash, ...userInfo } = user;
-    return userInfo;
+// Se mantiene esta función por si otras partes de la API la necesitan.
+export const verifyToken = (token) => {
+    try {
+        return jwt.verify(token, SECRET_KEY);
+    } catch (error) {
+        return null; // Token inválido
+    }
 };

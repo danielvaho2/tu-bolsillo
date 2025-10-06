@@ -37,8 +37,8 @@ function MovementList() {
     try {
      
       const [movementsResponse, categoriesResponse] = await Promise.all([
-        fetch(`http://localhost:5000/api/movements/${user.userId}`),
-        fetch(`http://localhost:5000/api/categories/${user.userId}`)
+        fetch(`http://localhost:5001/api/movements/${user.userId}`),
+        fetch(`http://localhost:5001/api/categories/${user.userId}`)
       ]);
 
       const movementsData = await movementsResponse.json();

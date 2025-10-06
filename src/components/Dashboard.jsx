@@ -22,7 +22,7 @@ function Dashboard() {
 
     const fetchDashboard = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/dashboard/${user.userId}`);
+        const response = await fetch(`http://localhost:5001/api/dashboard/${user.userId}`);
         const data = await response.json();
 
         if (response.ok) {

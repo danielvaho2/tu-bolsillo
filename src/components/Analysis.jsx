@@ -33,7 +33,7 @@ function Analysis() {
       console.log(`🔍 Haciendo petición a: /api/analysis/${user.userId}?${params}`);
 
       const response = await fetch(
-        `http://localhost:5000/api/analysis/${user.userId}?${params}`
+        `http://localhost:5001/api/analysis/${user.userId}?${params}`
       );
       
       const data = await response.json();
