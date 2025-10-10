@@ -58,7 +58,7 @@ function Categories() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/categories', {
+      const response = await fetch('http://localhost:5001/api/categories', {  // ✅ CAMBIADO de 5000 a 5001
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -92,8 +92,14 @@ function Categories() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/categories/${categoryId}`, {
-        method: 'DELETE'
+      const response = await fetch(`http://localhost:5001/api/categories/${categoryId}`, {  // ✅ CAMBIADO de 5000 a 5001
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId: user.userId  // ✅ AGREGADO: El backend necesita el userId
+        })
       });
 
       const data = await response.json();

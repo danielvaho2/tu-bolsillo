@@ -7,7 +7,8 @@ function AddMovement() {
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
-    categoryId: ''
+    categoryId: '',
+    date: new Date().toISOString().split('T')[0] // ✅ AGREGADO: fecha por defecto (hoy)
   });
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +71,7 @@ function AddMovement() {
     setSuccess(false);
 
     try {
-      const response = await fetch('http://localhost:5000/api/movements', {
+      const response = await fetch('http://localhost:5001/api/movements', {  // ✅ CAMBIADO de 5000 a 5001
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -80,7 +81,7 @@ function AddMovement() {
           description: formData.description,
           amount: parseFloat(formData.amount),
           categoryId: parseInt(formData.categoryId),
-          type: type
+          date: formData.date  // ✅ AGREGADO: enviar la fecha
         })
       });
 
@@ -89,7 +90,12 @@ function AddMovement() {
       if (response.ok) {
         setSuccess(true);
         // Resetear formulario
-        setFormData({ description: '', amount: '', categoryId: '' });
+        setFormData({ 
+          description: '', 
+          amount: '', 
+          categoryId: '',
+          date: new Date().toISOString().split('T')[0]  // ✅ Resetear fecha
+        });
         setType('expense');
         
         // Opcional: redirigir después de un tiempo
@@ -156,6 +162,20 @@ function AddMovement() {
             min="0.01"
             step="0.01"
             placeholder="0.00"
+          />
+        </div>
+
+        {/* ✅ AGREGADO: Campo de fecha */}
+        <div className="form-group">
+          <label>Fecha:</label>
+          <input
+            type="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            required
+            disabled={submitting}
+            max={new Date().toISOString().split('T')[0]}  // No permitir fechas futuras
           />
         </div>
 

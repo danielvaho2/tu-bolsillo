@@ -1,22 +1,22 @@
-// backend/src/controllers/categoryController.js
 import * as categoryService from '../services/categoryService.js';
 
 /**
- * Obtiene todas las categorías de un usuario
+ * Obtiene todas las categorías de un usuario con totales agregados
  * GET /api/categories/:userId
  */
 export const getCategories = async (req, res) => {
   const { userId } = req.params;
 
-  if (!userId || isNaN(parseInt(userId, 10))) {
+  const id = parseInt(userId, 10);
+  if (!id || Number.isNaN(id)) {
     return res.status(400).json({ error: 'ID de usuario inválido' });
   }
 
   try {
-    const categories = await categoryService.get(parseInt(userId, 10));
+    const categories = await categoryService.getCategoriesWithTotals(id);
     return res.status(200).json({ categories });
   } catch (error) {
-    console.error('Error al obtener categorías:', error.message);
+    console.error('Error al obtener categorías con totales:', error.message || error);
     const status = error.status || 500;
     const message = error.message || 'Error al obtener categorías';
     return res.status(status).json({ error: message });
@@ -38,19 +38,19 @@ export const createCategory = async (req, res) => {
     return res.status(400).json({ error: 'Tipo de categoría inválido' });
   }
 
-  try {
-    const category = await categoryService.create(
-      parseInt(userId, 10),
-      name,
-      type
-    );
+  const id = parseInt(userId, 10);
+  if (!id || Number.isNaN(id)) {
+    return res.status(400).json({ error: 'ID de usuario inválido' });
+  }
 
+  try {
+    const category = await categoryService.create(id, name, type);
     return res.status(201).json({
       message: 'Categoría creada exitosamente',
       category
     });
   } catch (error) {
-    console.error('Error al crear categoría:', error.message);
+    console.error('Error al crear categoría:', error.message || error);
     const status = error.status || 500;
     const message = error.message || 'Error al crear categoría';
     return res.status(status).json({ error: message });
@@ -69,18 +69,16 @@ export const deleteCategory = async (req, res) => {
     return res.status(400).json({ error: 'ID de categoría inválido' });
   }
 
-  if (!userId || isNaN(parseInt(userId, 10))) {
+  const uid = parseInt(userId, 10);
+  if (!uid || Number.isNaN(uid)) {
     return res.status(400).json({ error: 'ID de usuario inválido' });
   }
 
   try {
-    const result = await categoryService.remove(
-      parseInt(categoryId, 10),
-      parseInt(userId, 10)
-    );
+    const result = await categoryService.remove(parseInt(categoryId, 10), uid);
     return res.status(200).json(result);
   } catch (error) {
-    console.error('Error al eliminar categoría:', error.message);
+    console.error('Error al eliminar categoría:', error.message || error);
     const status = error.status || 500;
     const message = error.message || 'Error al eliminar categoría';
     return res.status(status).json({ error: message });
