@@ -153,11 +153,3 @@ export const deleteMovement = async (req, res) => {
     return res.status(status).json({ error: message });
   }
 };
-
-export default {
-  getDashboard,
-  getAnalysis,
-  createMovement,
-  getMovements,
-  deleteMovement
-};

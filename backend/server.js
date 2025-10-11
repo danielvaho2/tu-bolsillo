@@ -2,16 +2,21 @@
 import express from 'express';
 import cors from 'cors';
 import 'dotenv/config';
-
+import app from './src/config/appConfig.js';
 import { pool, initDatabase } from './src/config/db.config.js';
+
 
 // Importar controllers
 import * as authController from './src/controllers/authController.js';
 import * as transactionController from './src/controllers/transactionController.js';
 import * as categoryController from './src/controllers/categoryController.js';
 
-const app = express();
+
 const PORT = process.env.PORT || 5001;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+});
 
 // Middlewares
 app.use(cors());
