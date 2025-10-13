@@ -1,16 +1,5 @@
 // backend/src/controllers/authController.js
 import * as authService from '../services/authService.js';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'mi_clave_secreta_fallback';
-
-const generateToken = (user) => {
-  return jwt.sign(
-    { id: user.id, email: user.email },
-    JWT_SECRET,
-    { expiresIn: '1d' }
-  );
-};
 
 export const register = async (req, res) => {
   const { name, email, password } = req.body;
@@ -29,15 +18,13 @@ export const register = async (req, res) => {
 
   try {
     const result = await authService.register(name, email, password);
-    const token = generateToken(result.user);
 
     console.log(`✅ Usuario registrado: ${email}`);
 
     return res.status(201).json({
-      userId: result.user.id,  // ✅ CAMBIADO de 'id' a 'userId'
+      userId: result.user.id,
       name: result.user.name,
-      email: result.user.email,
-      token: token
+      email: result.user.email
     });
   } catch (error) {
     console.error('Error en registro:', error.message);
@@ -58,15 +45,13 @@ export const login = async (req, res) => {
 
   try {
     const result = await authService.login(email, password);
-    const token = generateToken(result.user);
 
     console.log(`✅ Login exitoso: ${email}`);
 
     return res.status(200).json({
-      userId: result.user.id,  // ✅ CAMBIADO de 'id' a 'userId'
+      userId: result.user.id,
       name: result.user.name,
-      email: result.user.email,
-      token: token
+      email: result.user.email
     });
   } catch (error) {
     console.error('Error en login:', error.message);

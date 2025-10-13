@@ -86,9 +86,11 @@ export const create = async (userId, name, type) => {
   }
 
   try {
-    return await categoryRepository.createCategory(userId, name, type);
+    const category = await categoryRepository.createCategory(userId, name, type);
+    console.log('✅ Servicio createCategory devolvió:', category);
+    return category;
   } catch (error) {
-    console.error('Error en create category:', error);
+    console.error('❌ Error en categoryService.create:', error);
     if (error.status) throw error;
 
     const serviceError = new Error('Error al crear categoría');
@@ -96,6 +98,7 @@ export const create = async (userId, name, type) => {
     throw serviceError;
   }
 };
+
 
 /**
  * Elimina una categoría
