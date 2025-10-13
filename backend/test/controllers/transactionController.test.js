@@ -15,11 +15,10 @@ describe('Transaction Controller', () => {
         password: '123456'
       });
 
-    console.log('🧪 Respuesta al registrar usuario:', userRes.body);
-    console.log('🧪 Código de estado al registrar usuario:', userRes.statusCode);
+
 
     userId = userRes.body.userId;
-    console.log('🧪 userId obtenido:', userId);
+    
 
     // Crea una categoría para ese usuario
     const categoryRes = await request(app)
@@ -31,8 +30,6 @@ describe('Transaction Controller', () => {
         type: 'expense'
       });
 
-    console.log('🧪 Código de estado al crear categoría:', categoryRes.statusCode);
-    console.log('🧪 Respuesta al crear categoría:', categoryRes.body);
 
     if (!categoryRes.body.category) {
       console.log('❌ No se devolvió la categoría. Respuesta completa:', categoryRes.body);
@@ -40,7 +37,6 @@ describe('Transaction Controller', () => {
     }
 
     categoryId = categoryRes.body.category.id;
-    console.log('🧪 categoryId obtenido:', categoryId);
   });
 
   test('POST /api/transactions crea un movimiento válido', async () => {
@@ -54,11 +50,29 @@ describe('Transaction Controller', () => {
         date: '2025-10-10'
       });
 
-    console.log('🧪 Código de estado al crear transacción:', res.statusCode);
-    console.log('🧪 Respuesta al crear transacción:', res.body);
-
     expect(res.statusCode).toBe(201);
     expect(res.body.message).toBe('Movimiento registrado exitosamente');
     expect(res.body.movement).toBeDefined();
   });
+///test para get
+  test('GET /api/transactions/:userId devuelve los movimientos del usuario', async () => {
+    const res = await request(app)
+      .get(`/api/transactions/${userId}`);
+
+
+
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body.movements)).toBe(true);
+    expect(res.body.movements.length).toBeGreaterThan(0);
+
+    const movimiento = res.body.movements.find(m => m.category_id === categoryId);
+    expect(movimiento).toBeDefined();
+    expect(movimiento.description).toBe('Compra de libros');
+    expect(parseFloat(movimiento.amount)).toBe(50);
+  });
+
+
 });
+
+
+

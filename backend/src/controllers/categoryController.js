@@ -30,7 +30,7 @@ export const getCategories = async (req, res) => {
 export const createCategory = async (req, res) => {
   const { userId, name, type } = req.body;
 
-  console.log('📥 Datos recibidos en createCategory:', { userId, name, type });
+  
 
   if (!userId || !name || !type) {
     console.warn('⚠️ Faltan campos obligatorios');
@@ -50,7 +50,7 @@ export const createCategory = async (req, res) => {
 
   try {
     const category = await categoryService.create(id, name, type);
-    console.log('✅ Categoría creada correctamente:', category);
+    
     return res.status(201).json({
       message: 'Categoría creada exitosamente',
       category

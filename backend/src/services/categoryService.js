@@ -87,7 +87,7 @@ export const create = async (userId, name, type) => {
 
   try {
     const category = await categoryRepository.createCategory(userId, name, type);
-    console.log('✅ Servicio createCategory devolvió:', category);
+    
     return category;
   } catch (error) {
     console.error('❌ Error en categoryService.create:', error);
