@@ -1,6 +1,6 @@
 {
   "name": "finanzas-backend",
-  "type": "module", 
+  "type": "module",
   "version": "1.0.0",
   "description": "Backend para aplicación de finanzas personales",
   "main": "server.js",
@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "jest": "^30.2.0",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.1.10"
   },
   "keywords": [
     "nodejs",

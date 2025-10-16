@@ -14,9 +14,9 @@ import * as categoryController from './src/controllers/categoryController.js';
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+// });
 
 // Middlewares
 app.use(cors());
