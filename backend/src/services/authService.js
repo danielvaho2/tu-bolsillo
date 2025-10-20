@@ -101,6 +101,7 @@ export const login = async (email, password) => {
     // 4. Generar token
     const token = generateToken(user);
 
+    //si coincide se devuelve el usuario
     return {
       user: {
         id: user.id,
