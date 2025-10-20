@@ -34,7 +34,7 @@ export const register = async (name, email, password) => {
       error.status = 409;
       throw error;
     }
-    
+
     // 2. Hashear la contraseña
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
