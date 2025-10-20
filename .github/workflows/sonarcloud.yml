@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,16 +27,16 @@ jobs:
 
       - name: Run tests with coverage
         working-directory: ./backend
-        run: npm test -- --coverage
-
-      - name: Show coverage files (debug)
         run: |
-          echo "=== pwd ==="
-          pwd
-          echo "=== ls backend/coverage ==="
-          ls -la backend/coverage || true
-          echo "=== preview lcov ==="
-          head -n 40 backend/coverage/lcov.info || true
+          npm test -- --coverage
+          ls -la coverage
+          cat coverage/lcov.info | head -n 20
+
+      - name: Upload coverage artifact (debug)
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: backend/coverage/lcov.info
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
@@ -46,6 +47,7 @@ jobs:
             -Dsonar.sources=backend/src
             -Dsonar.tests=backend/test
             -Dsonar.javascript.lcov.reportPaths=backend/coverage/lcov.info
+            -Dsonar.host.url=https://sonarcloud.io
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
