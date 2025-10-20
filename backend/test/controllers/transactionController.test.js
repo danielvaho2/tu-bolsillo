@@ -6,7 +6,6 @@ describe('Transaction Controller', () => {
   let categoryId;
 
   beforeAll(async () => {
-    // Crea un usuario de prueba
     const userRes = await request(app)
       .post('/api/auth/register')
       .send({
@@ -15,21 +14,16 @@ describe('Transaction Controller', () => {
         password: '123456'
       });
 
-
-
     userId = userRes.body.userId;
-    
 
-    // Crea una categoría para ese usuario
     const categoryRes = await request(app)
       .post('/api/categories')
-      .set('Content-Type', 'application/json') // ✅ fuerza el tipo correcto
+      .set('Content-Type', 'application/json')
       .send({
         userId,
         name: `Categoría de prueba ${Date.now()}`,
         type: 'expense'
       });
-
 
     if (!categoryRes.body.category) {
       console.log('❌ No se devolvió la categoría. Respuesta completa:', categoryRes.body);
@@ -54,12 +48,10 @@ describe('Transaction Controller', () => {
     expect(res.body.message).toBe('Movimiento registrado exitosamente');
     expect(res.body.movement).toBeDefined();
   });
-///test para get
+
   test('GET /api/transactions/:userId devuelve los movimientos del usuario', async () => {
     const res = await request(app)
       .get(`/api/transactions/${userId}`);
-
-
 
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body.movements)).toBe(true);
@@ -71,8 +63,8 @@ describe('Transaction Controller', () => {
     expect(parseFloat(movimiento.amount)).toBe(50);
   });
 
-
+  // 👇 importante para evitar el error del entorno cerrado
+  afterAll(async () => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+  });
 });
-
-
-

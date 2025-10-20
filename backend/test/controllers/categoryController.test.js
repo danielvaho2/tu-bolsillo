@@ -8,4 +8,8 @@ describe('Category Controller', () => {
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body.categories)).toBe(true);
   });
+
+  afterAll(async () => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+  });
 });
