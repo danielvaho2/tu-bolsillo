@@ -1,7 +1,7 @@
 // backend/src/controllers/authController.js
 import * as authService from '../services/authService.js';
 
-export const register = async (req, res) => {
+export const  register = async (req, res) => {
   const { name, email, password } = req.body;
 
   if (!name || !email || !password) {

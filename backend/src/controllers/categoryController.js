@@ -7,7 +7,7 @@ import * as categoryService from '../services/categoryService.js';
 export const getCategories = async (req, res) => {
   const { userId } = req.params;
 
-  const id = parseInt(userId, 10);
+  const id = Number.parseInt(userId, 10);
   if (!id || Number.isNaN(id)) {
     return res.status(400).json({ error: 'ID de usuario inválido' });
   }
@@ -42,7 +42,7 @@ export const createCategory = async (req, res) => {
     return res.status(400).json({ error: 'Tipo de categoría inválido' });
   }
 
-  const id = parseInt(userId, 10);
+  const id = Number.parseInt(userId, 10);
   if (!id || Number.isNaN(id)) {
     console.warn('⚠️ ID de usuario inválido:', userId);
     return res.status(400).json({ error: 'ID de usuario inválido' });
@@ -71,17 +71,17 @@ export const deleteCategory = async (req, res) => {
   const { categoryId } = req.params;
   const { userId } = req.body;
 
-  if (!categoryId || isNaN(parseInt(categoryId, 10))) {
+  if (!categoryId || Number.isNaN(Number.parseInt(categoryId, 10))) {
     return res.status(400).json({ error: 'ID de categoría inválido' });
   }
 
-  const uid = parseInt(userId, 10);
+  const uid = Number.parseInt(userId, 10);
   if (!uid || Number.isNaN(uid)) {
     return res.status(400).json({ error: 'ID de usuario inválido' });
   }
 
   try {
-    const result = await categoryService.remove(parseInt(categoryId, 10), uid);
+    const result = await categoryService.remove(Number.parseInt(categoryId, 10), uid);
     return res.status(200).json(result);
   } catch (error) {
     console.error('❌ Error al eliminar categoría:', error.message || error);

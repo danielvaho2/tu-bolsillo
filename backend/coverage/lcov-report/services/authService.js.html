@@ -341,153 +341,153 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// backend/src/services/authService.js
-import { findUserByEmail, createUser } from '../db/userReporitory.js';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">  // backend/src/services/authService.js
+  import { findUserByEmail, createUser } from '../db/userReporitory.js';
+  import bcrypt from 'bcrypt';
+  import jwt from 'jsonwebtoken';
 &nbsp;
-const SECRET_KEY = process.env.JWT_SECRET || 'mi_clave_secreta_super_segura';
+  const SECRET_KEY = process.env.JWT_SECRET || 'mi_clave_secreta_super_segura';
 &nbsp;
-/**
- * Genera un token JWT para el usuario
- * @param {object} user - Objeto de usuario (id, email, name)
- * @returns {string} El token JWT
- */
-const generateToken = (user) =&gt; {
-  return jwt.sign(
-    { userId: user.id, email: user.email },
-    SECRET_KEY,
-    { expiresIn: '1d' }
-  );
-};
+  /**
+   * Genera un token JWT para el usuario
+   * @param {object} user - Objeto de usuario (id, email, name)
+   * @returns {string} El token JWT
+   */
+  const generateToken = (user) =&gt; {
+    return jwt.sign(
+      { userId: user.id, email: user.email },
+      SECRET_KEY,
+      { expiresIn: '1d' }
+    );
+  };
 &nbsp;
-/**
- * Lógica para registrar un nuevo usuario
- * @param {string} name - Nombre del usuario
- * @param {string} email - Email del usuario
- * @param {string} password - Contraseña en texto plano
- * @returns {object} { user, token }
- */
-export const register = async (name, email, password) =&gt; {
-  try {
-    // 1. Verificar si el usuario ya existe
-    const existingUser = await findUserByEmail(email);
-    if (existingUser) {
-      const error = new Error('El usuario con este email ya existe');
-      error.status = 409;
-      throw error;
+  /**
+   * Lógica para registrar un nuevo usuario
+   * @param {string} name - Nombre del usuario
+   * @param {string} email - Email del usuario
+   * @param {string} password - Contraseña en texto plano
+   * @returns {object} { user, token }
+   */
+  export const register = async (name, email, password) =&gt; {
+    try {
+      // 1. Verificar si el usuario ya existe
+      const existingUser = await findUserByEmail(email);
+      if (existingUser) {
+        const error = new Error('El usuario con este email ya existe');
+        error.status = 409;
+        throw error;
+      }
+&nbsp;
+      // 2. Hashear la contraseña
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+&nbsp;
+      // 3. Crear el usuario en la BD (pasando parámetros individuales)
+      const newUser = await createUser(name, email, hashedPassword);
+      
+      // 4. Generar token
+      const token = generateToken(newUser);
+&nbsp;
+      return {
+        user: {
+          id: newUser.id,
+          name: newUser.name,
+          email: newUser.email
+        },
+        token
+      };
+    } catch (error) {
+      console.error('Error en register:', error.message);
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (error.status) throw error;
+      
+      const serviceError = <span class="cstat-no" title="statement not covered" >new Error(error.message || 'Error en el servicio de registro');</span>
+<span class="cstat-no" title="statement not covered" >      serviceError.status = 500;</span>
+<span class="cstat-no" title="statement not covered" >      throw serviceError;</span>
     }
+  };
 &nbsp;
-    // 2. Hashear la contraseña
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+  /**
+   * Lógica para el inicio de sesión
+   * @param {string} email - Email del usuario
+   * @param {string} password - Contraseña en texto plano ingresada
+   * @returns {object} { user, token }
+   */
+  export const login = async (email, password) =&gt; {
+    try {
+      // 1. Buscar usuario por email
+      const user = await findUserByEmail(email);
 &nbsp;
-    // 3. Crear el usuario en la BD (pasando parámetros individuales)
-    const newUser = await createUser(name, email, hashedPassword);
-    
-    // 4. Generar token
-    const token = generateToken(newUser);
+      if (!user) {
+        const error = new Error('Credenciales inválidas');
+        error.status = 401;
+        throw error;
+      }
 &nbsp;
-    return {
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email
-      },
-      token
-    };
-  } catch (error) {
-    console.error('Error en register:', error.message);
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (error.status) throw error;
-    
-    const serviceError = <span class="cstat-no" title="statement not covered" >new Error(error.message || 'Error en el servicio de registro');</span>
-<span class="cstat-no" title="statement not covered" >    serviceError.status = 500;</span>
-<span class="cstat-no" title="statement not covered" >    throw serviceError;</span>
-  }
-};
+      // 2. Obtener la contraseña hasheada
+      const hashedPassword = user.password;
+      
+      if (!hashedPassword) {
+        const error = new Error('Error de configuración de contraseña para el usuario');
+        error.status = 500;
+        throw error;
+      }
 &nbsp;
-/**
- * Lógica para el inicio de sesión
- * @param {string} email - Email del usuario
- * @param {string} password - Contraseña en texto plano ingresada
- * @returns {object} { user, token }
- */
-export const login = async (email, password) =&gt; {
-  try {
-    // 1. Buscar usuario por email
-    const user = await findUserByEmail(email);
+      // 3. Comparar la contraseña ingresada con el hash almacenado
+      const passwordMatch = await bcrypt.compare(password, hashedPassword);
 &nbsp;
-    if (!user) {
-      const error = new Error('Credenciales inválidas');
-      error.status = 401;
-      throw error;
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (!passwordMatch) {
+        const error = <span class="cstat-no" title="statement not covered" >new Error('Credenciales inválidas');</span>
+<span class="cstat-no" title="statement not covered" >        error.status = 401;</span>
+<span class="cstat-no" title="statement not covered" >        throw error;</span>
+      }
+&nbsp;
+      // 4. Generar token
+      const token = generateToken(user);
+&nbsp;
+      //si coincide se devuelve el usuario
+      return {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email
+        },
+        token
+      };
+    } catch (error) {
+      console.error('Error en login:', error.message);
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (error.status) throw error;
+      
+      const serviceError = <span class="cstat-no" title="statement not covered" >new Error(error.message || 'Error de autenticación');</span>
+<span class="cstat-no" title="statement not covered" >      serviceError.status = 500;</span>
+<span class="cstat-no" title="statement not covered" >      throw serviceError;</span>
     }
+  };
 &nbsp;
-    // 2. Obtener la contraseña hasheada
-    const hashedPassword = user.password;
-    
-    if (!hashedPassword) {
-      const error = new Error('Error de configuración de contraseña para el usuario');
-      error.status = 500;
-      throw error;
+  /**
+   * Verifica un token JWT
+   * @param {string} token - Token JWT
+   * @returns {object|null} Payload del token o null si es inválido
+   */
+  export const verifyToken = (token) =&gt; {
+    try {
+      return jwt.verify(token, SECRET_KEY);
+    } catch (error) {
+      return null;
     }
+  };
 &nbsp;
-    // 3. Comparar la contraseña ingresada con el hash almacenado
-    const passwordMatch = await bcrypt.compare(password, hashedPassword);
-&nbsp;
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (!passwordMatch) {
-      const error = <span class="cstat-no" title="statement not covered" >new Error('Credenciales inválidas');</span>
-<span class="cstat-no" title="statement not covered" >      error.status = 401; </span>
-<span class="cstat-no" title="statement not covered" >      throw error;</span>
-    }
-&nbsp;
-    // 4. Generar token
-    const token = generateToken(user);
-&nbsp;
-    //si coincide se devuelve el usuario
-    return {
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email
-      },
-      token
-    };
-  } catch (error) {
-    console.error('Error en login:', error.message);
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (error.status) throw error;
-    
-    const serviceError = <span class="cstat-no" title="statement not covered" >new Error(error.message || 'Error de autenticación');</span>
-<span class="cstat-no" title="statement not covered" >    serviceError.status = 500;</span>
-<span class="cstat-no" title="statement not covered" >    throw serviceError;</span>
-  }
-};
-&nbsp;
-/**
- * Verifica un token JWT
- * @param {string} token - Token JWT
- * @returns {object|null} Payload del token o null si es inválido
- */
-export const verifyToken = (token) =&gt; {
-  try {
-    return jwt.verify(token, SECRET_KEY);
-  } catch (error) {
-    return null;
-  }
-};
-&nbsp;
-export default {
-  register,
-  login,
-  verifyToken
-};</pre></td></tr></table></pre>
+  export default {
+    register,
+    login,
+    verifyToken
+  };</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-20T21:19:28.241Z
+                at 2025-10-20T22:09:58.197Z
             </div>
         <script src="../prettify.js"></script>
         <script>
