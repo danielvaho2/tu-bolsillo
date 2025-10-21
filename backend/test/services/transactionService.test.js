@@ -41,27 +41,12 @@ describe("transactionService", () => {
 
     expect(result).toHaveProperty("id", 10);
     expect(categoryRepo.findCategoriesByUserId).toHaveBeenCalledWith(1);
-    expect(transactionRepo.createTransaction).toHaveBeenCalledWith(
-      1,
-      1,
-      "desc",
-      100,
-      "income",
-      "2025-10-20"
-    );
+    expect(transactionRepo.createTransaction).toHaveBeenCalledWith(1,1,"desc",100,"income","2025-10-20");
   });
 
   test("Debe lanzar un error si falta algun campo", async () => {
-    await expect(
-      transactionService.createTransaction(
-        1,
-        null,
-        "desc",
-        100,
-        "income",
-        "2025-10-20"
-      )
-    ).rejects.toThrow("Todos los campos son obligatorios");
+    await expect(transactionService.createTransaction(1,null,"desc",100,"income","2025-10-20"))
+      .rejects.toThrow("Todos los campos son obligatorios");
   });
 
   test("Debe lanzar un error si la categoria no pertenece al usuario", async () => {

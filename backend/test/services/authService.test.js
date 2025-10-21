@@ -58,6 +58,15 @@ describe("authService", () => {
     ).rejects.toThrow("El usuario con este email ya existe");
   });
 
+ test('debe lanzar error si la db falla', async () => {
+ userRepo.findUserByEmail.mockResolvedValue(null);
+  userRepo.createUser.mockRejectedValue(new Error('Db fail'));
+
+  await expect(authService.register("tests", "existe@prueba.com", "123456"))
+    .rejects
+    .toThrow('Error en el servicio de registro');
+});
+
   //-------------login-------------
 
 test("Debe verificar que las credenciales coincidan", async () => {
@@ -116,6 +125,15 @@ await expect(authService.login("existe@prueba.com", 'hashedpasswordWRONG'))
     .rejects.toThrow('Error de configuración de contraseña para el usuario');  // Verificamos el mensaje de error
 
 });
+test('debe lanzar error si la db falla', async () => {
+  userRepo.findUserByEmail.mockRejectedValue(new Error('Db fail'));
+
+  await expect(authService.login("existe@prueba.com", "123456"))
+    .rejects
+    .toThrow('Error de autenticación');
+});
+
+
 //-------------Verificar el token-------------
 
 test('debe verificar un token válido', () => {

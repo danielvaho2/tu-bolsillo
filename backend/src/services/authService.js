@@ -57,7 +57,7 @@
       console.error('Error en register:', error.message);
       if (error.status) throw error;
       
-      const serviceError = new Error(error.message || 'Error en el servicio de registro');
+      const serviceError = new Error('Error en el servicio de registro');
       serviceError.status = 500;
       throw serviceError;
     }
@@ -114,7 +114,7 @@
       console.error('Error en login:', error.message);
       if (error.status) throw error;
       
-      const serviceError = new Error(error.message || 'Error de autenticación');
+      const serviceError = new Error('Error de autenticación');
       serviceError.status = 500;
       throw serviceError;
     }
