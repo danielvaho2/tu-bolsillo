@@ -9,12 +9,12 @@ import * as categoryService from '../services/categoryService.js';
 export const getDashboard = async (req, res) => {
   const { userId } = req.params;
 
-  if (!userId || isNaN(parseInt(userId, 10))) {
+  if (!userId || Number.isNaN(Number.parseInt(userId, 10))) {
     return res.status(400).json({ error: 'ID de usuario inválido' });
   }
 
   try {
-    const parsedUserId = parseInt(userId, 10);
+    const parsedUserId = Number.parseInt(userId, 10);
     
     // Obtener datos financieros y categorías en paralelo
     const [financialSummary, categories] = await Promise.all([
@@ -48,14 +48,14 @@ export const getAnalysis = async (req, res) => {
   const { userId } = req.params;
   const { range = 'all' } = req.query;
 
-  if (!userId || isNaN(parseInt(userId, 10))) {
+  if (!userId || Number.isNaN(Number.parseInt(userId, 10))) {
     return res.status(400).json({ error: 'ID de usuario inválido' });
   }
 
   console.log(`📊 Solicitud de análisis para usuario ${userId}, rango: ${range}`);
 
   try {
-    const data = await transactionService.getAnalysis(parseInt(userId, 10), range);
+    const data = await transactionService.getAnalysis(Number.parseInt(userId, 10), range);
     console.log(`📈 Análisis enviado: ${data.movements.length} movimientos, ${data.categories.length} categorías`);
     return res.status(200).json(data);
   } catch (error) {
@@ -77,16 +77,16 @@ export const createMovement = async (req, res) => {
     return res.status(400).json({ error: 'Todos los campos son obligatorios' });
   }
 
-  if (parseFloat(amount) <= 0) {
+  if (Number.parseFloat(amount) <= 0) {
     return res.status(400).json({ error: 'El monto debe ser mayor a 0' });
   }
 
   try {
     const movement = await transactionService.createTransaction(
-      parseInt(userId, 10),
-      parseInt(categoryId, 10),
+      Number.parseInt(userId, 10),
+      Number.parseInt(categoryId, 10),
       description,
-      parseFloat(amount),
+      Number.parseFloat(amount),
       date
     );
 
@@ -109,12 +109,12 @@ export const createMovement = async (req, res) => {
 export const getMovements = async (req, res) => {
   const { userId } = req.params;
 
-  if (!userId || isNaN(parseInt(userId, 10))) {
+  if (!userId || Number.isNaN(Number.parseInt(userId, 10))) {
     return res.status(400).json({ error: 'ID de usuario inválido' });
   }
 
   try {
-    const movements = await transactionService.getTransactions(parseInt(userId, 10));
+    const movements = await transactionService.getTransactions(Number.parseInt(userId, 10));
     return res.status(200).json({ movements });
   } catch (error) {
     console.error('Error al obtener movimientos:', error.message);
@@ -132,18 +132,18 @@ export const deleteMovement = async (req, res) => {
   const { movementId } = req.params;
   const { userId } = req.body;
 
-  if (!movementId || isNaN(parseInt(movementId, 10))) {
+  if (!movementId || Number.isNaN(Number.parseInt(movementId, 10))) {
     return res.status(400).json({ error: 'ID de movimiento inválido' });
   }
 
-  if (!userId || isNaN(parseInt(userId, 10))) {
+  if (!userId || Number.isNaN(Number.parseInt(userId, 10))) {
     return res.status(400).json({ error: 'ID de usuario inválido' });
   }
 
   try {
     const result = await transactionService.deleteTransactionService(
-      parseInt(movementId, 10),
-      parseInt(userId, 10)
+      Number.parseInt(movementId, 10),
+      Number.parseInt(userId, 10)
     );
     return res.status(200).json(result);
   } catch (error) {

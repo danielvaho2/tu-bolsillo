@@ -21,7 +21,7 @@ export const createTransaction = async (userId, categoryId, description, amount,
   try {
     // Verificar que la categoría existe y pertenece al usuario
     const categories = await categoryRepository.findCategoriesByUserId(userId);
-    const category = categories.find(c => c.id === parseInt(categoryId, 10));
+    const category = categories.find(c => c.id === Number.parseInt(categoryId, 10));
 
     if (!category) {
       const error = new Error('Categoría no encontrada o no pertenece al usuario');

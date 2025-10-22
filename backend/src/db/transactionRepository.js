@@ -58,15 +58,15 @@ export const getFinancialSummary = async (userId, startDate = null, endDate = nu
     ]);
 
     const summary = summaryResult.rows[0];
-    const balance = parseFloat(summary.total_income) - parseFloat(summary.total_expenses);
+    const balance = Number.parseFloat(summary.total_income) - Number.parseFloat(summary.total_expenses);
 
     return {
-      totalIncome: parseFloat(summary.total_income),
-      totalExpenses: parseFloat(summary.total_expenses),
+      totalIncome: Number.parseFloat(summary.total_income),
+      totalExpenses: Number.parseFloat(summary.total_expenses),
       balance: balance,
       recentTransactions: transactionsResult.rows.map(t => ({
         id: t.id,
-        amount: parseFloat(t.amount),
+        amount: Number.parseFloat(t.amount),
         type: t.type,
         categoryId: t.category_id,
         categoryName: t.category_name,
