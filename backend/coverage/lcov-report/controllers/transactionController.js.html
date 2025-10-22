@@ -384,12 +384,12 @@ import * as categoryService from '../services/categoryService.js';
 export const getDashboard = <span class="fstat-no" title="function not covered" >as</span>ync (req, res) =&gt; {
   const { userId } = <span class="cstat-no" title="statement not covered" >req.params;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  if (!userId || isNaN(parseInt(userId, 10))) {</span>
+<span class="cstat-no" title="statement not covered" >  if (!userId || Number.isNaN(Number.parseInt(userId, 10))) {</span>
 <span class="cstat-no" title="statement not covered" >    return res.status(400).json({ error: 'ID de usuario inválido' });</span>
   }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
-    const parsedUserId = <span class="cstat-no" title="statement not covered" >parseInt(userId, 10);</span>
+    const parsedUserId = <span class="cstat-no" title="statement not covered" >Number.parseInt(userId, 10);</span>
     
     // Obtener datos financieros y categorías en paralelo
     const [financialSummary, categories] = <span class="cstat-no" title="statement not covered" >await Promise.all([</span>
@@ -423,14 +423,14 @@ export const getAnalysis = <span class="fstat-no" title="function not covered" >
   const { userId } = <span class="cstat-no" title="statement not covered" >req.params;</span>
   const { range = <span class="branch-0 cbranch-no" title="branch not covered" >'all' </span>} = <span class="cstat-no" title="statement not covered" >req.query;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  if (!userId || isNaN(parseInt(userId, 10))) {</span>
+<span class="cstat-no" title="statement not covered" >  if (!userId || Number.isNaN(Number.parseInt(userId, 10))) {</span>
 <span class="cstat-no" title="statement not covered" >    return res.status(400).json({ error: 'ID de usuario inválido' });</span>
   }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  console.log(`📊 Solicitud de análisis para usuario ${userId}, rango: ${range}`);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
-    const data = <span class="cstat-no" title="statement not covered" >await transactionService.getAnalysis(parseInt(userId, 10), range);</span>
+    const data = <span class="cstat-no" title="statement not covered" >await transactionService.getAnalysis(Number.parseInt(userId, 10), range);</span>
 <span class="cstat-no" title="statement not covered" >    console.log(`📈 Análisis enviado: ${data.movements.length} movimientos, ${data.categories.length} categorías`);</span>
 <span class="cstat-no" title="statement not covered" >    return res.status(200).json(data);</span>
   } catch (error) {
@@ -452,16 +452,16 @@ export const createMovement = async (req, res) =&gt; {
 <span class="cstat-no" title="statement not covered" >    return res.status(400).json({ error: 'Todos los campos son obligatorios' });</span>
   }
 &nbsp;
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (parseFloat(amount) &lt;= 0) {
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (Number.parseFloat(amount) &lt;= 0) {
 <span class="cstat-no" title="statement not covered" >    return res.status(400).json({ error: 'El monto debe ser mayor a 0' });</span>
   }
 &nbsp;
   try {
     const movement = await transactionService.createTransaction(
-      parseInt(userId, 10),
-      parseInt(categoryId, 10),
+      Number.parseInt(userId, 10),
+      Number.parseInt(categoryId, 10),
       description,
-      parseFloat(amount),
+      Number.parseFloat(amount),
       date
     );
 &nbsp;
@@ -484,12 +484,12 @@ export const createMovement = async (req, res) =&gt; {
 export const getMovements = async (req, res) =&gt; {
   const { userId } = req.params;
 &nbsp;
-  <span class="missing-if-branch" title="if path not taken" >I</span>if (!userId || isNaN(parseInt(userId, 10))) {
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (!userId || Number.isNaN(Number.parseInt(userId, 10))) {
 <span class="cstat-no" title="statement not covered" >    return res.status(400).json({ error: 'ID de usuario inválido' });</span>
   }
 &nbsp;
   try {
-    const movements = await transactionService.getTransactions(parseInt(userId, 10));
+    const movements = await transactionService.getTransactions(Number.parseInt(userId, 10));
     return res.status(200).json({ movements });
   } catch (error) {
 <span class="cstat-no" title="statement not covered" >    console.error('Error al obtener movimientos:', error.message);</span>
@@ -507,18 +507,18 @@ export const deleteMovement = <span class="fstat-no" title="function not covered
   const { movementId } = <span class="cstat-no" title="statement not covered" >req.params;</span>
   const { userId } = <span class="cstat-no" title="statement not covered" >req.body;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  if (!movementId || isNaN(parseInt(movementId, 10))) {</span>
+<span class="cstat-no" title="statement not covered" >  if (!movementId || Number.isNaN(Number.parseInt(movementId, 10))) {</span>
 <span class="cstat-no" title="statement not covered" >    return res.status(400).json({ error: 'ID de movimiento inválido' });</span>
   }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  if (!userId || isNaN(parseInt(userId, 10))) {</span>
+<span class="cstat-no" title="statement not covered" >  if (!userId || Number.isNaN(Number.parseInt(userId, 10))) {</span>
 <span class="cstat-no" title="statement not covered" >    return res.status(400).json({ error: 'ID de usuario inválido' });</span>
   }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const result = <span class="cstat-no" title="statement not covered" >await transactionService.deleteTransactionService(</span>
-      parseInt(movementId, 10),
-      parseInt(userId, 10)
+      Number.parseInt(movementId, 10),
+      Number.parseInt(userId, 10)
     );
 <span class="cstat-no" title="statement not covered" >    return res.status(200).json(result);</span>
   } catch (error) {
@@ -535,7 +535,7 @@ export const deleteMovement = <span class="fstat-no" title="function not covered
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-21T23:27:57.760Z
+                at 2025-10-22T00:44:10.024Z
             </div>
         <script src="../prettify.js"></script>
         <script>

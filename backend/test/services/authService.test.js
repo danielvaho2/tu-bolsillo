@@ -143,13 +143,14 @@ test('debe verificar un token válido', () => {
     const result = authService.verifyToken('tokenValido');
     expect(result).toEqual(usermock);
   });
- test('debe retornar null si el token es inválido', () => {
-    jest.spyOn(jwt, 'verify').mockImplementation(() => {
-      throw new Error('Token inválido');
-    });
-
-    const result = authService.verifyToken('tokenMalo');
-    expect(result).toBeNull();
+test('debe retornar null si el token es inválido', () => {
+  jest.spyOn(jwt, 'verify').mockImplementation(() => {
+    throw new Error('Token inválido');
   });
+
+  const result = authService.verifyToken('tokenMalo');
+  expect(result).toBeNull();
+});
+
 });
 
