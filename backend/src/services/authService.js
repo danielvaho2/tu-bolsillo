@@ -125,14 +125,15 @@
    * @param {string} token - Token JWT
    * @returns {object|null} Payload del token o null si es inválido
    */
-  export const verifyToken = (token) => {
-    try {
-      return jwt.verify(token, SECRET_KEY);
-    } catch (error) {
-  console.log('Exception while doing something: ${error}'); // ✅ CORRECTO
-  return null;
-}
-  };
+ export const verifyToken = (token) => {
+  try {
+    return jwt.verify(token, SECRET_KEY);
+  } catch (error) {
+    console.error('Error verificando token:', error);
+    return null;
+  }
+};
+
 
   export default {
     register,
