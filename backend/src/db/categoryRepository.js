@@ -3,7 +3,7 @@ import { pool } from '../config/db.config.js'; // Importación ES Module con ext
 // ---------------------------------------------
 // REPOSITORIO DE CATEGORÍAS
 // ---------------------------------------------
-
+//Comentario para push 
 /**
  * Busca todas las categorías de un usuario.
  * @param {number} userId - ID del usuario.
