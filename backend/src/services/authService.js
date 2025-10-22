@@ -129,6 +129,7 @@
     try {
       return jwt.verify(token, SECRET_KEY);
     } catch (error) {
+      console.log(`Exception while doing something: ${err}`);
       return null;
     }
   };

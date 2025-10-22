@@ -8,10 +8,14 @@ await jest.unstable_mockModule('../../src/db/categoryRepository.js', () => ({
   deleteCategory: jest.fn(),
   findById: jest.fn(),
 }));
+await jest.unstable_mockModule("../../src/config/db.config.js", () => ({
+  pool: { query: jest.fn() },
+}));
 
 // --- 2️⃣ Importar módulos ya con el mock aplicado ---
 const categoryRepository = await import('../../src/db/categoryRepository.js');
 const categoryService = await import('../../src/services/categoryService.js');
+const { pool } = await import("../../src/config/db.config.js");
 
 // --- 3️⃣ Tests ---
 describe("categoryService", () => {
@@ -78,4 +82,53 @@ test('Debe lanzar error si tiene transacciones asociadas', async()=>{
     await expect(categoryService.remove(5, 1))
       .rejects.toThrow('Error al eliminar categoría');
   });
-});
+
+  //-------Get--------
+  test("Devuelve las categorías del usuario correctamente", async () => {
+      const mockCategories = [
+        { id: 1, name: "Sueldo", type: "income", userId: 10 },
+      ];
+      categoryRepository.findCategoriesByUserId.mockResolvedValue(mockCategories);
+      const result = await categoryService.get(10);
+      expect(result).toEqual(mockCategories);
+      expect(categoryRepository.findCategoriesByUserId).toHaveBeenCalledWith(10);
+    });
+
+    test("Lanza error si no se pasa userId", async () => {
+      await expect(categoryService.get(null)).rejects.toThrow("ID de usuario requerido");
+    });
+
+    test("Lanza error genérico si el repositorio falla", async () => {
+      categoryRepository.findCategoriesByUserId.mockRejectedValue(new Error("DB crash"));
+      await expect(categoryService.get(10)).rejects.toThrow("Error al obtener categorías");
+    });
+//-----getCategoriesWithTotals-----
+    test("Devuelve categorías con montos correctamente", async () => {
+      const mockRows = [
+        { id: 1, name: "Comida", type: "expense", total: "200" },
+        { id: 2, name: "Sueldo", type: "income", total: null },
+      ];
+      pool.query.mockResolvedValue({ rows: mockRows });
+      const result = await categoryService.getCategoriesWithTotals(10);
+      expect(result).toEqual([
+        { id: 1, name: "Comida", type: "expense", amount: 200 },
+        { id: 2, name: "Sueldo", type: "income", amount: 0 },
+      ]);
+      expect(pool.query).toHaveBeenCalledTimes(1);
+      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("SELECT"), [10]);
+    });
+
+    test("Lanza error si no se pasa userId", async () => {
+      await expect(categoryService.getCategoriesWithTotals(undefined))
+        .rejects.toThrow("ID de usuario requerido");
+    });
+    test("Lanza error genérico si pool.query falla", async () => {
+      pool.query.mockRejectedValue(new Error("DB error"));
+      await expect(categoryService.getCategoriesWithTotals(10))
+        .rejects.toThrow("Error al obtener categorías con totales");
+    });
+  
+  });
+
+  
+
