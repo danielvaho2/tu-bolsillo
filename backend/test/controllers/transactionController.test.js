@@ -1,70 +1,253 @@
-import request from 'supertest';
-import app from '../../src/config/appConfig.js';
+import { jest, expect, beforeEach, describe, test } from '@jest/globals';
 
-describe('Transaction Controller', () => {
-  let userId;
-  let categoryId;
+// --- Mock de los servicios ---
+await jest.unstable_mockModule('../../src/services/transactionService.js', () => ({
+  getDashboardData: jest.fn(),
+  getAnalysis: jest.fn(),
+  createTransaction: jest.fn(),
+  getTransactions: jest.fn(),
+  deleteTransactionService: jest.fn(),
+}));
 
-  beforeAll(async () => {
-    const userRes = await request(app)
-      .post('/api/auth/register')
-      .send({
-        name: 'Usuario Test',
-        email: `test${Date.now()}@mail.com`,
-        password: '123456'
-      });
+await jest.unstable_mockModule('../../src/services/categoryService.js', () => ({
+  get: jest.fn(),
+}));
 
-    userId = userRes.body.userId;
+// --- Importar después de los mocks ---
+const transactionService = await import('../../src/services/transactionService.js');
+const categoryService = await import('../../src/services/categoryService.js');
+const controller = await import('../../src/controllers/transactionController.js');
 
-    const categoryRes = await request(app)
-      .post('/api/categories')
-      .set('Content-Type', 'application/json')
-      .send({
-        userId,
-        name: `Categoría de prueba ${Date.now()}`,
-        type: 'expense'
-      });
+// --- Mock response helper ---
+const mockRes = () => {
+  const res = {};
+  res.status = jest.fn().mockReturnValue(res);
+  res.json = jest.fn().mockReturnValue(res);
+  return res;
+};
 
-    if (!categoryRes.body.category) {
-      console.log('❌ No se devolvió la categoría. Respuesta completa:', categoryRes.body);
-      throw new Error('No se pudo crear la categoría correctamente');
-    }
-
-    categoryId = categoryRes.body.category.id;
+// --- Tests ---
+describe('transactionController', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  test('POST /api/transactions crea un movimiento válido', async () => {
-    const res = await request(app)
-      .post('/api/transactions')
-      .send({
-        userId,
-        description: 'Compra de libros',
-        amount: 50,
-        categoryId,
-        date: '2025-10-10'
-      });
+  //getDashboard
+  test('getDashboard devuelve datos correctamente', async () => {
+    const req = { params: { userId: '10' } };
+    const res = mockRes();
 
-    expect(res.statusCode).toBe(201);
-    expect(res.body.message).toBe('Movimiento registrado exitosamente');
-    expect(res.body.movement).toBeDefined();
+    transactionService.getDashboardData.mockResolvedValue({
+      balance: 1000, totalIncome: 2000, totalExpenses: 1000, recentTransactions: []
+    });
+    categoryService.get.mockResolvedValue([{ id: 1, name: 'Comida' }]);
+
+    await controller.getDashboard(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({
+      financialData: expect.any(Object),
+      categories: [{ id: 1, name: 'Comida' }]
+    });
   });
 
-  test('GET /api/transactions/:userId devuelve los movimientos del usuario', async () => {
-    const res = await request(app)
-      .get(`/api/transactions/${userId}`);
+  test('getDashboard error si ID inválido', async () => {
+    const req = { params: { userId: 'abc' } };
+    const res = mockRes();
 
-    expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body.movements)).toBe(true);
-    expect(res.body.movements.length).toBeGreaterThan(0);
+    await controller.getDashboard(req, res);
 
-    const movimiento = res.body.movements.find(m => m.category_id === categoryId);
-    expect(movimiento).toBeDefined();
-    expect(movimiento.description).toBe('Compra de libros');
-    expect(parseFloat(movimiento.amount)).toBe(50);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'ID de usuario inválido' });
   });
 
-  // 👇 importante para evitar el error del entorno cerrado
-  afterAll(async () => {
-    await new Promise(resolve => setTimeout(resolve, 500));
+  test('getDashboard captura error del servicio', async () => {
+    const req = { params: { userId: '10' } };
+    const res = mockRes();
+
+    transactionService.getDashboardData.mockRejectedValue(new Error('falló dashboard'));
+
+    await controller.getDashboard(req, res);
+
+    expect(console.error).toHaveBeenCalledWith('Error al obtener dashboard:', 'falló dashboard');
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'falló dashboard' });
+  });
+
+  // getAnalysis
+  test('getAnalysis devuelve análisis correctamente', async () => {
+    const req = { params: { userId: '5' }, query: { range: 'all' } };
+    const res = mockRes();
+
+    transactionService.getAnalysis.mockResolvedValue({
+      movements: [], categories: []
+    });
+
+    await controller.getAnalysis(req, res);
+
+    expect(console.log).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ movements: [], categories: [] });
+  });
+
+  test('getAnalysis error si ID inválido', async () => {
+    const req = {params: { userId: 'abc' },query: {}} 
+
+    const res = mockRes();
+
+    await controller.getAnalysis(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'ID de usuario inválido' });
+  });
+
+  test('getAnalysis captura error del servicio', async () => {
+    const req = { params: { userId: '5' }, query: {} };
+    const res = mockRes();
+
+    transactionService.getAnalysis.mockRejectedValue(new Error('error análisis'));
+
+    await controller.getAnalysis(req, res);
+
+    expect(console.error).toHaveBeenCalledWith('Error al obtener análisis:', 'error análisis');
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'error análisis' });
+  });
+
+  // createMovement
+  test('createMovement crea movimiento correctamente', async () => {
+    const req = {
+      body: { userId: 1, description: 'Compra', amount: 100, categoryId: 2, date: '2025-10-22' }
+    };
+    const res = mockRes();
+
+    const mockMovement = { id: 1, description: 'Compra' };
+    transactionService.createTransaction.mockResolvedValue(mockMovement);
+
+    await controller.createMovement(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Movimiento registrado exitosamente',
+      movement: mockMovement
+    });
+  });
+
+  test('createMovement error si faltan campos', async () => {
+    const req = { body: { userId: 1, description: '', amount: 0 } };
+    const res = mockRes();
+
+    await controller.createMovement(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Todos los campos son obligatorios' });
+  });
+
+  test('createMovement error si monto <= 0', async () => {
+    const req = { body: { userId: 1, description: 'Prueba', amount: -5, categoryId: 2, date: '2025-10-22' } };
+    const res = mockRes();
+
+    await controller.createMovement(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'El monto debe ser mayor a 0' });
+  });
+
+  test('createMovement captura error del servicio', async () => {
+    const req = {
+      body: { userId: 1, description: 'Compra', amount: 50, categoryId: 2, date: '2025-10-22' }
+    };
+    const res = mockRes();
+
+    transactionService.createTransaction.mockRejectedValue(new Error('error al crear movimiento'));
+    await controller.createMovement(req, res);
+
+    expect(console.error).toHaveBeenCalledWith('Error al crear movimiento:', 'error al crear movimiento');
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'error al crear movimiento' });
+  });
+
+  // getMovements
+  test('getMovements devuelve movimientos correctamente', async () => {
+    const req = { params: { userId: '3' } };
+    const res = mockRes();
+    const mockMovements = [{ id: 1, description: 'Pago' }];
+
+    transactionService.getTransactions.mockResolvedValue(mockMovements);
+
+    await controller.getMovements(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ movements: mockMovements });
+  });
+
+  test('getMovements error si ID inválido', async () => {
+    const req = { params: { userId: 'abc' } };
+    const res = mockRes();
+
+    await controller.getMovements(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'ID de usuario inválido' });
+  });
+
+  test('getMovements captura error del servicio', async () => {
+    const req = { params: { userId: '3' } };
+    const res = mockRes();
+
+    transactionService.getTransactions.mockRejectedValue(new Error('error al obtener movimientos'));
+
+    await controller.getMovements(req, res);
+
+    expect(console.error).toHaveBeenCalledWith('Error al obtener movimientos:', 'error al obtener movimientos');
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'error al obtener movimientos' });
+  });
+
+  // deleteMovement
+  test('deleteMovement elimina correctamente', async () => {
+    const req = { params: { movementId: '4' }, body: { userId: 1 } };
+    const res = mockRes();
+
+    transactionService.deleteTransactionService.mockResolvedValue({ message: 'Eliminado' });
+
+    await controller.deleteMovement(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Eliminado' });
+  });
+
+  test('deleteMovement error si movementId inválido', async () => {
+    const req = { params: { movementId: 'abc' }, body: { userId: 1 } };
+    const res = mockRes();
+
+    await controller.deleteMovement(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'ID de movimiento inválido' });
+  });
+
+  test('deleteMovement error si userId inválido', async () => {
+    const req = { params: { movementId: '1' }, body: { userId: 'abc' } };
+    const res = mockRes();
+
+    await controller.deleteMovement(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'ID de usuario inválido' });
+  });
+
+  test('deleteMovement captura error del servicio', async () => {
+    const req = { params: { movementId: '1' }, body: { userId: 1 } };
+    const res = mockRes();
+
+    transactionService.deleteTransactionService.mockRejectedValue(new Error('falló al eliminar'));
+    await controller.deleteMovement(req, res);
+
+    expect(console.error).toHaveBeenCalledWith('Error al eliminar movimiento:', 'falló al eliminar');
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'falló al eliminar' });
   });
 });
